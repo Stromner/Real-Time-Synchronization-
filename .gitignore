@@ -1,0 +1,8 @@
+# Ignore all files and sub-directories
+/*
+/*/
+# Except for these files
+!/src/
+!/include/
+!.gitignore
+# But ignore these sub files in the allowed files

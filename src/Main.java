@@ -1,46 +1,40 @@
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import diff_match_patch.Sync;
+import diff_match_patch.fraser_neil.diff_match_patch.Diff;
 
 
-public class Main implements Runnable {
-
-	public static void main(String[] args) {
-		//Server server = new Server();
-		ClientConnection cc, cc2;
-		(new Thread(new Server())).start();
-		cc = new ClientConnection();
+public class Main {
+	public static void main(String[] args) throws InterruptedException {
+		Path doc = Paths.get("send.txt");
+		Path doc2 = Paths.get("recieve.txt");
+		Sync sync;
+		sync = new Sync(doc);
 		
-		try {
-			Thread.sleep(5000);
-			System.out.println("5 sec sleep(Between second send)");
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		while(true){
+			Thread.sleep(2000);
+			LinkedList<Diff> list = sync.getDiff();
+			try{
+				System.out.println("Difference in files: ");
+				
+				Iterator<Diff> it = list.iterator();
+				while(it.hasNext()){
+					Diff d = it.next();
+					System.out.println(d.toString());
+				}
+				System.out.println();
+				
+				sync.applyDiff(list, doc2);
+				
+			}
+			catch(IndexOutOfBoundsException e2){}
+			catch(NullPointerException e2){
+				System.out.println("Null");
+			}
 		}
-		cc2 = new ClientConnection();
-		//server.run();
-		//cc.connect();
-		
-		/*
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                GridBagLayoutDemo gbld = new GridBagLayoutDemo(); 
-                gbld.createAndShowGUI();
-            }
-        });
-        */
-		
-		/*
-		Client client = new Client();
-		client.setTitle("TestTitle");
-		client.setSize(500, 300);
-		client.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		//client.pack();
-		client.setVisible(true);
-		*/	
-	}
-
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		System.out.println("hello from thread");
 	}
 }

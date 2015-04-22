@@ -1,7 +1,6 @@
 package diff_match_patch;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -10,89 +9,142 @@ import java.nio.file.Paths;
 import junit.framework.TestCase;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SyncTest extends TestCase{
-	private String sSend = "diff_match_patch\testSend.txt", sRecieve = "diff_match_patch\testRecieve.txt";
-	private Path docSend = Paths.get("testSend.txt");
-	private Path docRecieve = Paths.get("testRecieve.txt");
+	private String sSend = "./src/diff_match_patch/testSend.txt",
+				sRecieve = "./src/diff_match_patch/testRecieve.txt";
+	private Path docSend = Paths.get(sSend);
+	private Path docRecieve = Paths.get(sRecieve);
 	private Sync sync;
-	private static Boolean setUpIsDone = false;
+	private static Boolean oneTimeSetUpDone = false;
 	
 	@Before
-	public void oneTimeSetUp() throws IOException{
-		if(setUpIsDone){
-			return;
+	public void setUp(){
+		if(!oneTimeSetUpDone){
+			// Create the two test documents if they don't exist
+			File send = new File(sSend), recieve = new File(sRecieve);
+			try {
+				if(!send.exists()){	
+					send.createNewFile();
+				} 
+				if(!recieve.exists()){
+					recieve.createNewFile();
+				}
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			docSend = Paths.get(sSend);
+			docRecieve = Paths.get(sRecieve);
+			
+			oneTimeSetUpDone = true;
 		}
 		
-		// Create the two test documents if they don't exist
-		File send = new File(sSend), recieve = new File(sRecieve);
-		if(!send.exists()){
-			send.createNewFile();
-		}
-		if(!recieve.exists()){
-			recieve.createNewFile();
-		}
 		
-		docSend = Paths.get(sSend);
-		docRecieve = Paths.get(sRecieve);
-		
-		setUpIsDone = true;
-	}
-	
-	@Before
-	public void setUp() throws IOException{
 		// Empty the two text documents in case of old data
-		PrintWriter pw = new PrintWriter(sSend);
-		pw.close();
-		pw = new PrintWriter(sRecieve);
-		pw.close();
-		
-		sync = new Sync(docSend);
+		try {
+			PrintWriter pw = new PrintWriter(sSend);
+			pw.close();
+			pw = new PrintWriter(sRecieve);
+			pw.close();
+			
+			sync = new Sync(docSend);
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@Test
 	public void testEmptyToOneChar() throws IOException {
-		//sync.openWriteFile(docSend, "a");
-		//sync.applyDiff(sync.getDiff(), docRecieve);
-		assertEquals(true, true);
-		//assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
+		sync.openWriteFile(docSend, "a");
+		sync.applyDiff(sync.getDiff(), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
 	}
 	
 	@Test
-	public void testOneCharToEmpty() {
-		fail("Not yet implemented");
+	public void testOneCharToEmpty() throws IOException {
+		sync.openWriteFile(docSend, "a");
+		sync.getDiff(); // Update the base string
+		
+		sync.openWriteFile(docSend, "");
+		sync.applyDiff(sync.getDiff(), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals(""));
 	}
 	
 	@Test
-	public void testOneRowToMany() {
-		fail("Not yet implemented");
+	public void testOneRowToMany() throws IOException {
+		sync.openWriteFile(docSend, "a");
+		sync.openWriteFile(docRecieve, "a");
+		sync.getDiff(); // Update the base string
+		
+		sync.openWriteFile(docSend, "a\na");
+		sync.applyDiff(sync.getDiff(), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals("a\na"));
 	}
 	
 	@Test
-	public void testManyRowToOne() {
-		fail("Not yet implemented");
+	public void testManyRowToOne() throws IOException {
+		sync.openWriteFile(docSend, "a\na");
+		sync.openWriteFile(docRecieve, "a\na");
+		sync.getDiff(); // Update the base string
+		
+		sync.openWriteFile(docSend, "a");
+		sync.applyDiff(sync.getDiff(), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
 	}
 	
 	@Test
-	public void testManyRowsToLess() {
-		fail("Not yet implemented");
+	public void testManyRowsToLess() throws IOException {
+		sync.openWriteFile(docSend, "a\nb\nc\nd");
+		sync.openWriteFile(docRecieve, "a\nb\nc\nd");
+		sync.getDiff(); // Update the base string
+		
+		sync.openWriteFile(docSend, "a\nb\nd");
+		sync.applyDiff(sync.getDiff(), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals("a\nb\nd"));
 	}
 	
 	@Test
-	public void testManyRowsToFewer() {
-		fail("Not yet implemented");
+	public void testManyRowsToMore() throws IOException {
+		sync.openWriteFile(docSend, "a\nb\nc\nd");
+		sync.openWriteFile(docRecieve, "a\nb\nc\nd");
+		sync.getDiff(); // Update the base string
+		
+		sync.openWriteFile(docSend, "a\nb\nbb\nc\ncc\nd");
+		sync.applyDiff(sync.getDiff(), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals("a\nb\nbb\nc\ncc\nd"));
 	}
 	
 	@Test
-	public void testDifferenceBetweenFiles() {
-		fail("Not yet implemented");
+	public void testDifferenceBetweenFiles() throws IOException {
+		sync.openWriteFile(docSend, "abba\ndabba\ncabba\ndabba");
+		sync.openWriteFile(docRecieve, "abba\ndabba\nMOLA\ndabba");
+		sync.getDiff(); // Update the base string
+		
+		sync.openWriteFile(docSend, "abba\ndabba\ncabba123\ndabba");
+		sync.applyDiff(sync.getDiff(), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals("abba\ndabba\nMOLA123\ndabba"));
 	}
 	
 	@Test
-	public void testSwedishCharacters() {
-		fail("Not yet implemented");
+	public void testSwedishCharacters() throws IOException {
+		sync.openWriteFile(docSend, "едц");
+		sync.applyDiff(sync.getDiff(), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals("едц"));
+	}
+	
+	@Test
+	public void testReplaceDocument() throws IOException {
+		sync.openWriteFile(docSend, "One day I went to the forrest\nto pick some flowers.");
+		sync.openWriteFile(docRecieve, "One day I went to the forrest\nto pick some flowers.");
+		sync.getDiff(); // Update the base string
+		
+		sync.openWriteFile(docSend, "I cut hair for a living.");
+		sync.applyDiff(sync.getDiff(), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals("I cut hair for a living."));
 	}
 	
 	// Test something that we want to fail

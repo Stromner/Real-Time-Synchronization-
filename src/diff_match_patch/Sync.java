@@ -33,10 +33,16 @@ public class Sync {
 	 * @param doc File to be open
 	 * @throws IOException When the file couldn't be open for whatever reason.
 	 */
-	public Sync(Path doc) throws IOException{
+	public Sync(Path doc){
 		modDoc = doc;
 		dmp = new diff_match_patch();
-		baseString = openReadFile(modDoc);
+		try {
+			baseString = openReadFile(modDoc);
+		} catch (IOException e) {
+			// TODO Print to the console
+			// "Could not open the file: '" + modDoc + "." 
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -52,6 +58,8 @@ public class Sync {
 		try {
 			modifiedString = openReadFile(modDoc);
 		} catch (IOException e) {
+			// TODO Print to the console
+			// "Could not open the file: '" + modDoc + "." 
 			e.printStackTrace();
 		}
 		LinkedList<Diff> list = dmp.diff_main(baseString, modifiedString, true);
@@ -62,13 +70,14 @@ public class Sync {
 	
 	/**
 	 * Given a diff and a file to apply the diff too the method does its best to
-	 * get the diff in the correct place.
+	 * apply the diff in the correct place. Ignores diffs that states the
+	 * documents are identical and diffs that are null.
 	 * 
 	 * @param diffList List containing the diffs that should be applied.
 	 * @param doc File to apply the diffs to.
 	 * @throws IOException Throws IO exception when the file can't be accessed.
 	 */
-	public void applyDiff(LinkedList<Diff> diffList, Path doc) throws IOException{
+	public void applyDiff(LinkedList<Diff> diffList, Path doc){
 		// If we can't fetch the first element then the document is empty, nothing to do.
 		// If there is only one element and that element is equal then no modifications have
 		// been made.
@@ -78,9 +87,22 @@ public class Sync {
 		}
 		
 		LinkedList<Patch> patchList = dmp.patch_make(diffList);
-		Object o[] = dmp.patch_apply(patchList, openReadFile(doc));
+		Object o[] = null;
+		try {
+			o = dmp.patch_apply(patchList, openReadFile(doc));
+		} catch (IOException e) {
+			// TODO Print to the console
+			// "Could not apply the patch to the file: '" + doc + "." 
+			e.printStackTrace();
+		}
 		String s = (String)o[0];
-		openWriteFile(doc, s);
+		try {
+			openWriteFile(doc, s);
+		} catch (IOException e) {
+			// TODO Print to the console
+			// "Could not open the file: '" + doc + ". File is busy." 
+			e.printStackTrace();
+		}
 	}
 	
 	/**

@@ -1,23 +1,23 @@
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import diff_match_patch.Sync;
+import diff_match_patch.SynchronizeRoot;
 import diff_match_patch.fraser_neil.diff_match_patch.Diff;
 
 
 public class Main {
 	public static void main(String[] args) throws InterruptedException {
-		Path doc = Paths.get("send.txt");
-		Path doc2 = Paths.get("recieve.txt");
-		Sync sync;
-		sync = new Sync(doc);
+		Path doc = Paths.get("");
+		Path testFileSend = Paths.get("send.txt");
+		System.out.println(testFileSend.toString());
+		Path testFileRecieve = Paths.get("recieve.txt");
+		SynchronizeRoot sync = new SynchronizeRoot(doc);
 		
 		while(true){
 			Thread.sleep(2000);
-			LinkedList<Diff> list = sync.getDiff();
+			LinkedList<Diff> list = sync.getDiff(testFileSend);
 			try{
 				System.out.println("Difference in files: ");
 				
@@ -28,7 +28,7 @@ public class Main {
 				}
 				System.out.println();
 				
-				sync.applyDiff(list, doc2);
+				sync.applyDiff(list, testFileRecieve);
 				
 			}
 			catch(IndexOutOfBoundsException e2){}

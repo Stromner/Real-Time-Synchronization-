@@ -11,12 +11,12 @@ import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SyncTest extends TestCase{
-	private String sSend = "./src/diff_match_patch/testSend.txt",
-				sRecieve = "./src/diff_match_patch/testRecieve.txt";
-	private Path docSend = Paths.get(sSend);
-	private Path docRecieve = Paths.get(sRecieve);
-	private Sync sync;
+public class SynchronizeRootTest extends TestCase{
+	private String sSend = "src/diff_match_patch/testSend.txt",
+				sRecieve = "src/diff_match_patch/testRecieve.txt",
+				sRoot = "";
+	private Path docSend, docRecieve, root;
+	private SynchronizeRoot sync;
 	private static Boolean oneTimeSetUpDone = false;
 	
 	@Before
@@ -36,12 +36,12 @@ public class SyncTest extends TestCase{
 				e.printStackTrace();
 			}
 			
-			docSend = Paths.get(sSend);
-			docRecieve = Paths.get(sRecieve);
-			
 			oneTimeSetUpDone = true;
 		}
 		
+		docSend = Paths.get(sSend);
+		docRecieve = Paths.get(sRecieve);
+		root = Paths.get(sRoot);
 		
 		// Empty the two text documents in case of old data
 		try {
@@ -50,27 +50,30 @@ public class SyncTest extends TestCase{
 			pw = new PrintWriter(sRecieve);
 			pw.close();
 			
-			sync = new Sync(docSend);
+			sync = new SynchronizeRoot(root);
 		}
 		catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
+	//
+	// Single File Tests
+	//
 	@Test
 	public void testEmptyToOneChar() throws IOException {
 		sync.openWriteFile(docSend, "a");
-		sync.applyDiff(sync.getDiff(), docRecieve);
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
 		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
 	}
 	
 	@Test
 	public void testOneCharToEmpty() throws IOException {
 		sync.openWriteFile(docSend, "a");
-		sync.getDiff(); // Update the base string
+		sync.getDiff(docSend); // Update the base string
 		
 		sync.openWriteFile(docSend, "");
-		sync.applyDiff(sync.getDiff(), docRecieve);
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
 		assertEquals(true, sync.openReadFile(docRecieve).equals(""));
 	}
 	
@@ -78,10 +81,10 @@ public class SyncTest extends TestCase{
 	public void testOneRowToMany() throws IOException {
 		sync.openWriteFile(docSend, "a");
 		sync.openWriteFile(docRecieve, "a");
-		sync.getDiff(); // Update the base string
+		sync.getDiff(docSend); // Update the base string
 		
 		sync.openWriteFile(docSend, "a\na");
-		sync.applyDiff(sync.getDiff(), docRecieve);
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
 		assertEquals(true, sync.openReadFile(docRecieve).equals("a\na"));
 	}
 	
@@ -89,10 +92,10 @@ public class SyncTest extends TestCase{
 	public void testManyRowToOne() throws IOException {
 		sync.openWriteFile(docSend, "a\na");
 		sync.openWriteFile(docRecieve, "a\na");
-		sync.getDiff(); // Update the base string
+		sync.getDiff(docSend); // Update the base string
 		
 		sync.openWriteFile(docSend, "a");
-		sync.applyDiff(sync.getDiff(), docRecieve);
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
 		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
 	}
 	
@@ -100,10 +103,10 @@ public class SyncTest extends TestCase{
 	public void testManyRowsToLess() throws IOException {
 		sync.openWriteFile(docSend, "a\nb\nc\nd");
 		sync.openWriteFile(docRecieve, "a\nb\nc\nd");
-		sync.getDiff(); // Update the base string
+		sync.getDiff(docSend); // Update the base string
 		
 		sync.openWriteFile(docSend, "a\nb\nd");
-		sync.applyDiff(sync.getDiff(), docRecieve);
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
 		assertEquals(true, sync.openReadFile(docRecieve).equals("a\nb\nd"));
 	}
 	
@@ -111,10 +114,10 @@ public class SyncTest extends TestCase{
 	public void testManyRowsToMore() throws IOException {
 		sync.openWriteFile(docSend, "a\nb\nc\nd");
 		sync.openWriteFile(docRecieve, "a\nb\nc\nd");
-		sync.getDiff(); // Update the base string
+		sync.getDiff(docSend); // Update the base string
 		
 		sync.openWriteFile(docSend, "a\nb\nbb\nc\ncc\nd");
-		sync.applyDiff(sync.getDiff(), docRecieve);
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
 		assertEquals(true, sync.openReadFile(docRecieve).equals("a\nb\nbb\nc\ncc\nd"));
 	}
 	
@@ -122,17 +125,17 @@ public class SyncTest extends TestCase{
 	public void testDifferenceBetweenFiles() throws IOException {
 		sync.openWriteFile(docSend, "abba\ndabba\ncabba\ndabba");
 		sync.openWriteFile(docRecieve, "abba\ndabba\nMOLA\ndabba");
-		sync.getDiff(); // Update the base string
+		sync.getDiff(docSend); // Update the base string
 		
 		sync.openWriteFile(docSend, "abba\ndabba\ncabba123\ndabba");
-		sync.applyDiff(sync.getDiff(), docRecieve);
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
 		assertEquals(true, sync.openReadFile(docRecieve).equals("abba\ndabba\nMOLA123\ndabba"));
 	}
 	
 	@Test
 	public void testSwedishCharacters() throws IOException {
 		sync.openWriteFile(docSend, "едц");
-		sync.applyDiff(sync.getDiff(), docRecieve);
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
 		assertEquals(true, sync.openReadFile(docRecieve).equals("едц"));
 	}
 	
@@ -140,12 +143,30 @@ public class SyncTest extends TestCase{
 	public void testReplaceDocument() throws IOException {
 		sync.openWriteFile(docSend, "One day I went to the forrest\nto pick some flowers.");
 		sync.openWriteFile(docRecieve, "One day I went to the forrest\nto pick some flowers.");
-		sync.getDiff(); // Update the base string
+		sync.getDiff(docSend); // Update the base string
 		
 		sync.openWriteFile(docSend, "I cut hair for a living.");
-		sync.applyDiff(sync.getDiff(), docRecieve);
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
 		assertEquals(true, sync.openReadFile(docRecieve).equals("I cut hair for a living."));
 	}
 	
-	// Test something that we want to fail
+	//
+	// Root Folder Test
+	//
+	
+	@Test
+	public void testDocumentAsRoot() throws IOException{
+		sync = new SynchronizeRoot(docSend);
+		
+		sync.openWriteFile(docSend, "a");
+		sync.applyDiff(sync.getDiff(docSend), docRecieve);
+		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
+	}
+	
+	// More complicated cases to test the entire root.
+	// Test empty root(Root exist but no folder inside)
+	// Test to have two files synced.
+	
+	// Test something that is suppose to fail
+	// Two different files trying to sync against one?
 }

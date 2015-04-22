@@ -1,10 +1,11 @@
 package diff_match_patch;
 /**
- * Version one of sync, can keep a single document in sync. The documents can be on 
- * different computers without any problems.
+ * Version two of sync, can keep an entire root folder in sync. The documents 
+ * can be synchronized over the net. To run it locally two instances of the
+ * program needs to run.
  * 
  * @author David Strömner
- * @date 2015-04-21
+ * @date 2015-04-22
  */
 
 import java.io.BufferedReader;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 import diff_match_patch.fraser_neil.diff_match_patch;
@@ -20,62 +22,78 @@ import diff_match_patch.fraser_neil.diff_match_patch.Diff;
 import diff_match_patch.fraser_neil.diff_match_patch.Operation;
 import diff_match_patch.fraser_neil.diff_match_patch.Patch;
 
-public class Sync {
+public class SynchronizeRoot {
 	public static final Charset ENCODING = Charset.forName("ISO-8859-1");
 	private diff_match_patch dmp;
-	private Path modDoc;
-	private String baseString;
+	private Path root;
+	private HashMap<String, PathWithData> rootMap;
 	
 	/**
-	 * Initialize a newly created Sync object by reading the given file so it got a 
-	 * base to work against when calculating the diffs. 
+	 * Initialize the synchronization object by searching through the provided root folder.
+	 * Each file inside the root folder will be synchronized.
 	 * 
-	 * @param doc File to be open
-	 * @throws IOException When the file couldn't be open for whatever reason.
+	 * @param doc Root to search through.
 	 */
-	public Sync(Path doc){
-		modDoc = doc;
+	// TODO Add support for excluding support for selected files by the user.
+	public SynchronizeRoot(Path doc){
+		root = doc;
 		dmp = new diff_match_patch();
+		rootMap = new HashMap<String,PathWithData>();
+		
+		// Read through the root for any files. For each file found create
+		// an entry in the rootMap
 		try {
-			baseString = openReadFile(modDoc);
+			Files.walk(root).forEach(filePath -> {
+			    if (Files.isRegularFile(filePath)) {
+			    	try {
+			    		System.out.println(filePath.toString());
+						rootMap.put(filePath.toString(), new PathWithData(filePath, openReadFile(filePath)));
+					} catch (Exception e) {
+						// TODO Print to console
+						System.out.println("Could not open" + filePath.toString() + ".");
+						e.printStackTrace();
+					}
+			    }
+			});
 		} catch (IOException e) {
-			// TODO Print to the console
-			// "Could not open the file: '" + modDoc + "." 
+			// TODO Print to console
+			System.out.println("Could not open all the files in the root directory");
 			e.printStackTrace();
 		}
 	}
 	
 	/**
-	 * Calculates a diff between the base document and the current document.
-	 * If a modifications is spotted it will reflect so in the return and the
-	 * base document will be updated to match the current version.
+	 * Calculates a diff between the old version of a document and the current version of 
+	 * the document. If a modifications is spotted it will reflect so in the return.
 	 * 
-	 * @return A list containing the calculated diff between the base document 
-	 * and the current document
+	 * @param doc Document to check if changed.
+	 * @return A list containing the calculate diff between the old document 
+	 * and the current one.
 	 */
-	public LinkedList<Diff> getDiff(){	
+	public LinkedList<Diff> getDiff(Path doc){
+		PathWithData file = rootMap.get(doc.toString());
 		String modifiedString = "";
+		
 		try {
-			modifiedString = openReadFile(modDoc);
+			modifiedString = openReadFile(doc);
 		} catch (IOException e) {
 			// TODO Print to the console
-			// "Could not open the file: '" + modDoc + "." 
+			System.out.println("Could not open the file: '" + doc.toString() + "."); 
 			e.printStackTrace();
 		}
-		LinkedList<Diff> list = dmp.diff_main(baseString, modifiedString, true);
-		baseString = modifiedString;
+		LinkedList<Diff> list = dmp.diff_main(file.getData(), modifiedString, true);
+		file.setData(modifiedString);
 		
 		return list;
 	}
 	
 	/**
-	 * Given a diff and a file to apply the diff too the method does its best to
-	 * apply the diff in the correct place. Ignores diffs that states the
-	 * documents are identical and diffs that are null.
+	 * Given a diff and a file to apply the diff too this method does its best to
+	 * apply the diff in the correct places. Ignores diffs that are empty and 
+	 * diffs that are null.
 	 * 
 	 * @param diffList List containing the diffs that should be applied.
 	 * @param doc File to apply the diffs to.
-	 * @throws IOException Throws IO exception when the file can't be accessed.
 	 */
 	public void applyDiff(LinkedList<Diff> diffList, Path doc){
 		// If we can't fetch the first element then the document is empty, nothing to do.
@@ -92,7 +110,7 @@ public class Sync {
 			o = dmp.patch_apply(patchList, openReadFile(doc));
 		} catch (IOException e) {
 			// TODO Print to the console
-			// "Could not apply the patch to the file: '" + doc + "." 
+			System.out.println("Could not apply the patch to the file: '" + doc + ".");
 			e.printStackTrace();
 		}
 		String s = (String)o[0];
@@ -100,7 +118,7 @@ public class Sync {
 			openWriteFile(doc, s);
 		} catch (IOException e) {
 			// TODO Print to the console
-			// "Could not open the file: '" + doc + ". File is busy." 
+			System.out.println("Could not open the file: '" + doc + ". File is busy.");
 			e.printStackTrace();
 		}
 	}

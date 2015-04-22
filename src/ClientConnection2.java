@@ -1,19 +1,21 @@
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
 
-public class ClientConnection {
-	
+public class ClientConnection2 {
 	public final static char REG  = 1;
 	public final static char DIFF = 2;
 	public final static char CHAT = 3;
 	
-	public ClientConnection(){
+	private String[] arr = {"a","b","c"};
+	
+	public ClientConnection2(){
 		connect();
 	}
 	
@@ -32,28 +34,36 @@ public class ClientConnection {
 	        InetAddress address = InetAddress.getByName(host);
 	        /** Establish a socket connetion */
 	        Socket socket = new Socket(address, port);
-	        /** Instantiate a BufferedOutputStream object */
-	        BufferedOutputStream bos = new BufferedOutputStream(socket.getOutputStream());
+	        /** Instantiate a ObjectOutputStream object */
+	        OutputStream os = socket.getOutputStream();
+	        
+	        ObjectOutputStream oos = new ObjectOutputStream(os);
+	        
 	        /** Instantiate an OutputStreamWriter object with the optional character
 	         * encoding.
 	         * with OutputStreamWriter you can pass objects such as Strings without converting to byte, byte arrays, or int values…ok I’m lazy…so what.
 	         */
-	        OutputStreamWriter osw = new OutputStreamWriter(bos, "US-ASCII");
 	        
 	        TimeStamp = new java.util.Date().toString();
 	        
-	        String process = "Calling the Socket Server on "+ host + " port " + port + " at " + TimeStamp +  (char) 13;
+	        oos.writeObject(arr); //Send?
+	        oos.close();
+	        os.close();
+	        socket.close();
 	        
-	        /** Write across the socket socket and flush the buffer */
-	        osw.write(process);
 	        
-	        osw.flush();
-	        
-	        /** Instantiate a BufferedInputStream object for reading
-	        /** Instantiate a BufferedInputStream object for reading
-	         * incoming socket streams.
+	        /*
+	        Socket s = new Socket("localhost",2002);
+			OutputStream os = s.getOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(os);
+			testobject to = new testobject(1,"object from client");
+			oos.writeObject(to);
+			oos.writeObject(new String("another object from the client"));
+			oos.close();
+			os.close();
+			s.close();
 	         */
-
+	        
 	        BufferedInputStream bis = new BufferedInputStream(socket.getInputStream());
 	        
 	        /**Instantiate an InputStreamReader with the optional
@@ -79,4 +89,9 @@ public class ClientConnection {
 	    }
 
 	}
+	
+	public void sendRegistration(String nick, String ip){
+		
+	}
+
 }

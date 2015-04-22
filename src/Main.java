@@ -10,7 +10,7 @@ public class Main implements Runnable {
 		
 		try {
 			Thread.sleep(5000);
-			System.out.println("5 sec sleep");
+			System.out.println("5 sec sleep(Between second send)");
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

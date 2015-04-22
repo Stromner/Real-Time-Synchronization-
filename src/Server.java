@@ -16,9 +16,12 @@ import java.util.Map;
  */
 public class Server implements Runnable{
 	
-	static ServerSocket socket1;
+	public final static char REG  = 1;
+	public final static char DIFF = 2;
+	public final static char CHAT = 3;
 	protected final static int port = 20001;//19999;
-	static Socket connection;
+	static ServerSocket serverSocket;
+	static Socket socket;
 
 	static boolean first;
 	static StringBuffer process;
@@ -31,17 +34,27 @@ public class Server implements Runnable{
 	}
 	public void run(){
 		try{
-			System.out.println(111);
-			socket1 = new ServerSocket(port);
-			System.out.println(222);
+			socket.close();
+		}
+		catch(Exception e){
+			System.out.println("socket.close();");
+		}
+		try{
+			serverSocket.close();
+		}
+		catch(Exception e){
+			System.out.println("serverSocket.close();");
+		}
+		try{
+			serverSocket = new ServerSocket(port);
 			System.out.println("SingleSocketServer Initialized");
 			int character;
 		
 			while (true) {
 				// 	System.out.println(222);
-		        connection = socket1.accept();
+		        socket = serverSocket.accept();
 		        
-		        BufferedInputStream is = new BufferedInputStream(connection.getInputStream());
+		        BufferedInputStream is = new BufferedInputStream(socket.getInputStream());
 		        InputStreamReader isr = new InputStreamReader(is);
 
 		        process = new StringBuffer();
@@ -58,14 +71,14 @@ public class Server implements Runnable{
 		        	 * of demonstrating socket connections. It would not be used in a 
 		        	 * real-world server application.
 		        	 */
-		        	System.out.println("1 sec sleep");
+		        	System.out.println("1 sec sleep (Server)");
 		        	Thread.sleep(1000);
 		        }
 		        catch (Exception e){System.out.println(e);}
 		        timeStamp = new java.util.Date().toString();
 		        String returnCode = "SingleSocketServer repsonded at "+ timeStamp + (char) 13;
 		        
-		        BufferedOutputStream os = new BufferedOutputStream(connection.getOutputStream());
+		        BufferedOutputStream os = new BufferedOutputStream(socket.getOutputStream());
 		        OutputStreamWriter osw = new OutputStreamWriter(os, "US-ASCII");
 		        
 		        osw.write(returnCode);
@@ -73,8 +86,8 @@ public class Server implements Runnable{
 		    }
 	    }
 	    catch (IOException e) {System.out.println("1 IOE: "+e);}
-		try{connection.close();
-			socket1.close();
+		try{socket.close();
+			serverSocket.close();
 		}
 		catch(IOException e){}
 	}

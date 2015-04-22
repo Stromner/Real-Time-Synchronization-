@@ -1,3 +1,4 @@
+package network;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,7 +27,7 @@ public class ClientConnection2 {
 	    int port = 20001;
 
 	    StringBuffer instr = new StringBuffer();
-	    String TimeStamp;
+	    String timeStamp;
 	    System.out.println("SocketClient initialized");
 	    
 	    try {
@@ -44,9 +45,10 @@ public class ClientConnection2 {
 	         * with OutputStreamWriter you can pass objects such as Strings without converting to byte, byte arrays, or int values…ok I’m lazy…so what.
 	         */
 	        
-	        TimeStamp = new java.util.Date().toString();
+	        timeStamp = new java.util.Date().toString();
+	        Packet packet = new Packet(1, "Magnus");
 	        
-	        oos.writeObject(arr); //Send?
+	        oos.writeObject(packet); //Send?
 	        oos.close();
 	        os.close();
 	        socket.close();
@@ -62,7 +64,7 @@ public class ClientConnection2 {
 			oos.close();
 			os.close();
 			s.close();
-	         */
+	        */
 	        
 	        BufferedInputStream bis = new BufferedInputStream(socket.getInputStream());
 	        

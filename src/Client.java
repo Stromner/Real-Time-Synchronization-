@@ -15,6 +15,8 @@ import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.border.TitledBorder;
 
+import network.ClientConnection;
+
 /**
  * Client - Connection to server
  * @author Magnus Källten

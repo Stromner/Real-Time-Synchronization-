@@ -15,7 +15,10 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import diff_match_patch.fraser_neil.diff_match_patch;
 import diff_match_patch.fraser_neil.diff_match_patch.Diff;
@@ -39,15 +42,23 @@ public class SynchronizeRoot {
 		root = doc;
 		dmp = new diff_match_patch();
 		rootMap = new HashMap<String,PathWithData>();
-		
+		updateRoot();		
+	}
+	
+	/**
+	 * Update the root folder, adds new files and removes deleted files. 
+	 */
+	public void updateRoot(){
 		// Read through the root for any files. For each file found create
 		// an entry in the rootMap
 		try {
 			Files.walk(root).forEach(filePath -> {
 			    if (Files.isRegularFile(filePath)) {
 			    	try {
-			    		System.out.println(filePath.toString());
-						rootMap.put(filePath.toString(), new PathWithData(filePath, openReadFile(filePath)));
+			    		// If the file isn't already in our Hashmap, add it.
+			    		if(rootMap.containsKey(filePath.toString()) == false){
+			    			rootMap.put(filePath.toString(), new PathWithData(filePath, openReadFile(filePath)));
+			    		}
 					} catch (Exception e) {
 						// TODO Print to console
 						System.out.println("Could not open" + filePath.toString() + ".");
@@ -60,6 +71,8 @@ public class SynchronizeRoot {
 			System.out.println("Could not open all the files in the root directory");
 			e.printStackTrace();
 		}
+		
+		// TODO Add support for being able to remove files while the program is running
 	}
 	
 	/**
@@ -99,8 +112,7 @@ public class SynchronizeRoot {
 		// If we can't fetch the first element then the document is empty, nothing to do.
 		// If there is only one element and that element is equal then no modifications have
 		// been made.
-		if((diffList.get(0).operation == Operation.EQUAL && diffList.get(1) == null) || (diffList.get(0) == null)){
-			System.out.println("AHHH");
+		if((diffList.get(0) == null) || (diffList.get(0).operation == Operation.EQUAL && diffList.size() == 1)){
 			return;
 		}
 		

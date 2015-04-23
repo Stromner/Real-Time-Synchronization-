@@ -22,39 +22,15 @@ public class SynchronizeRootTest extends TestCase{
 	@Before
 	public void setUp(){
 		if(!oneTimeSetUpDone){
-			// Create the two test documents if they don't exist
-			File send = new File(sSend), recieve = new File(sRecieve);
-			try {
-				if(!send.exists()){	
-					send.createNewFile();
-				} 
-				if(!recieve.exists()){
-					recieve.createNewFile();
-				}
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			oneTimeSetUpDone = true;
-		}
-		
-		docSend = Paths.get(sSend);
-		docRecieve = Paths.get(sRecieve);
-		root = Paths.get(sRoot);
-		
-		// Empty the two text documents in case of old data
-		try {
-			PrintWriter pw = new PrintWriter(sSend);
-			pw.close();
-			pw = new PrintWriter(sRecieve);
-			pw.close();
-			
+			docSend = prepareFile(sSend);
+			docRecieve = prepareFile(sRecieve);
+			root = Paths.get(sRoot);
 			sync = new SynchronizeRoot(root);
 		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+		
+		sync.updateRoot();
+		emptyFile(sSend);
+		emptyFile(sRecieve);
 	}
 	
 	//
@@ -163,10 +139,57 @@ public class SynchronizeRootTest extends TestCase{
 		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
 	}
 	
-	// More complicated cases to test the entire root.
-	// Test empty root(Root exist but no folder inside)
-	// Test to have two files synced.
+	@Test
+	public void testTwoDocumentsSync() throws IOException{
+		// Create an additional two test documents
+		Path docSend2 = prepareFile("src/diff_match_patch/testRecieve2.txt"),
+				docRecieve2 = prepareFile("src/diff_match_patch/testSend2.txt");
+		sync.updateRoot();
+		
+		// If the files exist from a previous run the root would already added them.
+		// However if they contained any data that data would not be removed by using
+		// prepareFile() 
+		sync.getDiff(docSend2);
+		sync.getDiff(docRecieve2);
+		
+		sync.openWriteFile(docSend, "a");
+		sync.applyDiff(sync.getDiff(docSend), docRecieve); 
+		
+		sync.openWriteFile(docSend2, "a");
+		sync.applyDiff(sync.getDiff(docSend2), docRecieve2);
+
+		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
+		assertEquals(true, sync.openReadFile(docRecieve2).equals("a"));
+	}
 	
-	// Test something that is suppose to fail
-	// Two different files trying to sync against one?
+	private Path prepareFile(String s){
+		// Create the file if it doesn't exist from a previous run of the program.
+		File f = new File(s);
+		try{
+			if(!f.exists()){
+				f.createNewFile();
+			}
+		}
+		catch(IOException e){
+			e.printStackTrace();
+		}
+		
+		Path p;
+		p = Paths.get(s);
+		
+		emptyFile(s);
+		
+		return p;
+	}
+	
+	private void emptyFile(String s){
+		// Empty the file in case of old data
+		try {
+			PrintWriter pw = new PrintWriter(s);
+			pw.close();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }

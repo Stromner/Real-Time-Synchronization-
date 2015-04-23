@@ -11,7 +11,7 @@ public class Main {
 	public static void main(String[] args) throws InterruptedException {
 		Path doc = Paths.get("");
 		Path testFileSend = Paths.get("send.txt");
-		System.out.println(testFileSend.toString());
+		
 		Path testFileRecieve = Paths.get("recieve.txt");
 		SynchronizeRoot sync = new SynchronizeRoot(doc);
 		

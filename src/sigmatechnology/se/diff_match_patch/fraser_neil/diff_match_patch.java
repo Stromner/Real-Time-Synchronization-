@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package diff_match_patch.fraser_neil;
+package sigmatechnology.se.diff_match_patch.fraser_neil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;

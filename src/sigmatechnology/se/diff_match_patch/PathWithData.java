@@ -1,4 +1,4 @@
-package diff_match_patch;
+package sigmatechnology.se.diff_match_patch;
 
 /**
  * Helper class that contains a path and the data for the file that the path point 

@@ -1,10 +1,11 @@
+package sigmatechnology.se;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import diff_match_patch.SynchronizeRoot;
-import diff_match_patch.fraser_neil.diff_match_patch.Diff;
+import sigmatechnology.se.diff_match_patch.SynchronizeRoot;
+import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Diff;
 
 
 public class Main {
@@ -13,7 +14,7 @@ public class Main {
 		Path testFileSend = Paths.get("send.txt");
 		
 		Path testFileRecieve = Paths.get("recieve.txt");
-		SynchronizeRoot sync = new SynchronizeRoot(doc);
+		SynchronizeRoot sync = new SynchronizeRoot(doc, null);
 		
 		while(true){
 			Thread.sleep(2000);

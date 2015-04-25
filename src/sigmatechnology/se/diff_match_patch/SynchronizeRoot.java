@@ -1,11 +1,13 @@
-package diff_match_patch;
+package sigmatechnology.se.diff_match_patch;
 /**
- * Version two of sync, can keep an entire root folder in sync. The documents 
+ * Version 2.1 of sync, can keep an entire root folder in sync. The documents 
  * can be synchronized over the net. To run it locally two instances of the
  * program needs to run.
  * 
+ * Added support for ignoring files in the root folder.
+ * 
  * @author David Strömner
- * @date 2015-04-22
+ * @date 2015-04-26
  */
 
 import java.io.BufferedReader;
@@ -18,35 +20,42 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import diff_match_patch.fraser_neil.diff_match_patch;
-import diff_match_patch.fraser_neil.diff_match_patch.Diff;
-import diff_match_patch.fraser_neil.diff_match_patch.Operation;
-import diff_match_patch.fraser_neil.diff_match_patch.Patch;
+import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch;
+import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Diff;
+import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Operation;
+import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Patch;
 
 public class SynchronizeRoot {
 	public static final Charset ENCODING = Charset.forName("ISO-8859-1");
 	private diff_match_patch dmp;
 	private Path root;
-	private HashMap<String, PathWithData> rootMap;
+	private Path[] ignore;
+	private Map<String, PathWithData> rootMap;
 	
 	/**
 	 * Initialize the synchronization object by searching through the provided root folder.
 	 * Each file inside the root folder will be synchronized.
 	 * 
 	 * @param doc Root to search through.
+	 * @param ignoreDocs Files and folders inside the root to ignore. Null if everything
+	 * should be included.
 	 */
-	// TODO Add support for excluding support for selected files by the user.
-	public SynchronizeRoot(Path doc){
+	public SynchronizeRoot(Path doc, Path[] ignoreDocs){
+		if(doc == null){
+			throw new IllegalArgumentException("Must have a valid root");
+		}
+		
 		root = doc;
+		ignore = ignoreDocs;
 		dmp = new diff_match_patch();
 		rootMap = new HashMap<String,PathWithData>();
-		updateRoot();		
+		updateRoot();
 	}
 	
 	/**
-	 * Update the root folder, adds new files and removes deleted files. 
+	 * Update the root folder, adds new files and removes deleted files. Respects the
+	 * given ignore list from initiation.
 	 */
 	public void updateRoot(){
 		// Read through the root for any files. For each file found create
@@ -54,25 +63,49 @@ public class SynchronizeRoot {
 		try {
 			Files.walk(root).forEach(filePath -> {
 			    if (Files.isRegularFile(filePath)) {
-			    	try {
-			    		// If the file isn't already in our Hashmap, add it.
-			    		if(rootMap.containsKey(filePath.toString()) == false){
-			    			rootMap.put(filePath.toString(), new PathWithData(filePath, openReadFile(filePath)));
+			    	// If the file isn't already in our map, add it.
+			    	if(rootMap.containsKey(filePath.toString()) == false){
+			    		// Make sure it's not on the ignore list.
+			    		Boolean notIgnored = true;
+			    		if(ignore != null){
+				    		for(int i=0;i<ignore.length;i++){
+				    			if(ignore[i].equals(filePath)){
+				    				notIgnored = false;
+				    				break;
+				    			}
+				    		}
 			    		}
-					} catch (Exception e) {
-						// TODO Print to console
-						System.out.println("Could not open" + filePath.toString() + ".");
-						e.printStackTrace();
-					}
+			    		if(notIgnored){
+			    			try {
+								rootMap.put(filePath.toString(), new PathWithData(filePath, openReadFile(filePath)));
+							} catch (Exception e) {
+								// TODO Print to console
+								System.out.println("Could not open" + filePath.toString() + ".");
+								e.printStackTrace();
+							}
+			    		}
+			    	}
 			    }
 			});
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// TODO Print to console
 			System.out.println("Could not open all the files in the root directory");
 			e.printStackTrace();
 		}
 		
-		// TODO Add support for being able to remove files while the program is running
+		// If any files were removed update the rootMap.
+		Iterator it = rootMap.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry pair = (Map.Entry)it.next();
+	        PathWithData pwd = (PathWithData)pair.getValue();
+	        if(!pwd.getPath().toFile().exists()){
+	        	it.remove();
+	        }
+	    }
+	}
+	
+	public void setIgnoreList(Path[] ignoreDocs){
+		ignore = ignoreDocs;
 	}
 	
 	/**
@@ -94,7 +127,7 @@ public class SynchronizeRoot {
 			System.out.println("Could not open the file: '" + doc.toString() + "."); 
 			e.printStackTrace();
 		}
-		LinkedList<Diff> list = dmp.diff_main(file.getData(), modifiedString, true);
+		LinkedList<Diff> list = dmp.diff_main(file.getData(),modifiedString, true);
 		file.setData(modifiedString);
 		
 		return list;

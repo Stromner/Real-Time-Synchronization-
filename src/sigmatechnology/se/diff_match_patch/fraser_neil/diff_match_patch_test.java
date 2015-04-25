@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package diff_match_patch.fraser_neil;
+package sigmatechnology.se.diff_match_patch.fraser_neil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,10 +26,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Diff;
+import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.LinesToCharsResult;
+import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Patch;
 import junit.framework.TestCase;
-import diff_match_patch.fraser_neil.diff_match_patch.Diff;
-import diff_match_patch.fraser_neil.diff_match_patch.LinesToCharsResult;
-import diff_match_patch.fraser_neil.diff_match_patch.Patch;
 
 public class diff_match_patch_test extends TestCase {
 

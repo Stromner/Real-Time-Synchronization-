@@ -1,4 +1,4 @@
-package diff_match_patch;
+package sigmatechnology.se.diff_match_patch;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,8 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class SynchronizeRootTest extends TestCase{
-	private String sSend = "src/diff_match_patch/testSend.txt",
-				sRecieve = "src/diff_match_patch/testRecieve.txt",
+	private String sSend = "src/sigmatechnology/se/diff_match_patch/testSend1.txt",
+				sRecieve = "src/sigmatechnology/se/diff_match_patch/testRecieve1.txt",
 				sRoot = "";
 	private Path docSend, docRecieve, root;
 	private SynchronizeRoot sync;
@@ -22,10 +22,10 @@ public class SynchronizeRootTest extends TestCase{
 	@Before
 	public void setUp(){
 		if(!oneTimeSetUpDone){
+			root = Paths.get(sRoot);
+			sync = new SynchronizeRoot(root, null);
 			docSend = prepareFile(sSend);
 			docRecieve = prepareFile(sRecieve);
-			root = Paths.get(sRoot);
-			sync = new SynchronizeRoot(root);
 		}
 		
 		sync.updateRoot();
@@ -132,7 +132,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testDocumentAsRoot() throws IOException{
-		sync = new SynchronizeRoot(docSend);
+		sync = new SynchronizeRoot(docSend, null);
 		
 		sync.openWriteFile(docSend, "a");
 		sync.applyDiff(sync.getDiff(docSend), docRecieve);
@@ -142,15 +142,9 @@ public class SynchronizeRootTest extends TestCase{
 	@Test
 	public void testTwoDocumentsSync() throws IOException{
 		// Create an additional two test documents
-		Path docSend2 = prepareFile("src/diff_match_patch/testRecieve2.txt"),
-				docRecieve2 = prepareFile("src/diff_match_patch/testSend2.txt");
+		Path docSend2 = prepareFile("src/sigmatechnology/se/diff_match_patch/testRecieve2.txt"),
+				docRecieve2 = prepareFile("src/sigmatechnology/se/diff_match_patch/testSend2.txt");
 		sync.updateRoot();
-		
-		// If the files exist from a previous run the root would already added them.
-		// However if they contained any data that data would not be removed by using
-		// prepareFile() 
-		sync.getDiff(docSend2);
-		sync.getDiff(docRecieve2);
 		
 		sync.openWriteFile(docSend, "a");
 		sync.applyDiff(sync.getDiff(docSend), docRecieve); 
@@ -160,6 +154,16 @@ public class SynchronizeRootTest extends TestCase{
 
 		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
 		assertEquals(true, sync.openReadFile(docRecieve2).equals("a"));
+	}
+	
+	@Test
+	public void testIgnoreList() throws IOException{
+		fail();
+	}
+	
+	@Test
+	public void testRemoveFile() throws IOException{
+		fail();
 	}
 	
 	private Path prepareFile(String s){
@@ -178,6 +182,11 @@ public class SynchronizeRootTest extends TestCase{
 		p = Paths.get(s);
 		
 		emptyFile(s);
+		// If the files exist from a previous run the root would already added them at
+		// the start. However emptying the file does not empty the modified string.
+		// Calculating the diff after emptying the file however would.
+		sync.updateRoot();
+		sync.getDiff(p);
 		
 		return p;
 	}

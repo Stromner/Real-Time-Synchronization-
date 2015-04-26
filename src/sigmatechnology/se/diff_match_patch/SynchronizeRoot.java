@@ -1,10 +1,13 @@
 package sigmatechnology.se.diff_match_patch;
 /**
- * Version 2.1 of sync, can keep an entire root folder in sync. The documents 
- * can be synchronized over the net. To run it locally two instances of the
- * program needs to run.
+ * Can keep an entire root folder in sync and ignore a subset of folders and 
+ * files inside the root. Meant to be run over network however works exactly 
+ * the same way if it were to be run locally. The only exception is that two 
+ * instances of the program needs to be active for it to work.
  * 
- * Added support for ignoring files in the root folder.
+ * To refresh the root folder the updateRoot() method needs to be called 
+ * explicitly. The only time it's called implicitly is when SynchronizeRoot is 
+ * created.
  * 
  * @author David Strömner
  * @date 2015-04-26
@@ -19,6 +22,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch;
@@ -30,7 +34,7 @@ public class SynchronizeRoot {
 	public static final Charset ENCODING = Charset.forName("ISO-8859-1");
 	private diff_match_patch dmp;
 	private Path root;
-	private Path[] ignore;
+	private List<Path> ignore;
 	private Map<String, PathWithData> rootMap;
 	
 	/**
@@ -41,7 +45,7 @@ public class SynchronizeRoot {
 	 * @param ignoreDocs Files and folders inside the root to ignore. Null if everything
 	 * should be included.
 	 */
-	public SynchronizeRoot(Path doc, Path[] ignoreDocs){
+	public SynchronizeRoot(Path doc, List<Path> ignoreDocs){
 		if(doc == null){
 			throw new IllegalArgumentException("Must have a valid root");
 		}
@@ -50,14 +54,14 @@ public class SynchronizeRoot {
 		ignore = ignoreDocs;
 		dmp = new diff_match_patch();
 		rootMap = new HashMap<String,PathWithData>();
-		updateRoot();
+		update();
 	}
 	
 	/**
 	 * Update the root folder, adds new files and removes deleted files. Respects the
 	 * given ignore list from initiation.
 	 */
-	public void updateRoot(){
+	public void update(){
 		// Read through the root for any files. For each file found create
 		// an entry in the rootMap
 		try {
@@ -65,24 +69,18 @@ public class SynchronizeRoot {
 			    if (Files.isRegularFile(filePath)) {
 			    	// If the file isn't already in our map, add it.
 			    	if(rootMap.containsKey(filePath.toString()) == false){
-			    		// Make sure it's not on the ignore list.
+			    		// However, make sure it's not on the ignore list.
 			    		Boolean notIgnored = true;
 			    		if(ignore != null){
-				    		for(int i=0;i<ignore.length;i++){
-				    			if(ignore[i].equals(filePath)){
+				    		for(int i=0;i<ignore.size();i++){
+				    			if(ignore.get(i).equals(filePath) || ignore.get(i).relativize(filePath).toString().equals("")){
 				    				notIgnored = false;
 				    				break;
 				    			}
 				    		}
 			    		}
 			    		if(notIgnored){
-			    			try {
-								rootMap.put(filePath.toString(), new PathWithData(filePath, openReadFile(filePath)));
-							} catch (Exception e) {
-								// TODO Print to console
-								System.out.println("Could not open" + filePath.toString() + ".");
-								e.printStackTrace();
-							}
+							rootMap.put(filePath.toString(), new PathWithData(filePath, openReadFile(filePath)));
 			    		}
 			    	}
 			    }
@@ -104,7 +102,7 @@ public class SynchronizeRoot {
 	    }
 	}
 	
-	public void setIgnoreList(Path[] ignoreDocs){
+	public void setIgnoreList(List<Path> ignoreDocs){
 		ignore = ignoreDocs;
 	}
 	
@@ -114,19 +112,16 @@ public class SynchronizeRoot {
 	 * 
 	 * @param doc Document to check if changed.
 	 * @return A list containing the calculate diff between the old document 
-	 * and the current one.
+	 * and the current one. null if the document could not be open/found.
 	 */
 	public LinkedList<Diff> getDiff(Path doc){
-		PathWithData file = rootMap.get(doc.toString());
+		PathWithData file;
+		if((file = rootMap.get(doc.toString())) == null){
+			return null;
+		}
 		String modifiedString = "";
 		
-		try {
-			modifiedString = openReadFile(doc);
-		} catch (IOException e) {
-			// TODO Print to the console
-			System.out.println("Could not open the file: '" + doc.toString() + "."); 
-			e.printStackTrace();
-		}
+		modifiedString = openReadFile(doc);
 		LinkedList<Diff> list = dmp.diff_main(file.getData(),modifiedString, true);
 		file.setData(modifiedString);
 		
@@ -151,45 +146,41 @@ public class SynchronizeRoot {
 		
 		LinkedList<Patch> patchList = dmp.patch_make(diffList);
 		Object o[] = null;
-		try {
-			o = dmp.patch_apply(patchList, openReadFile(doc));
-		} catch (IOException e) {
-			// TODO Print to the console
-			System.out.println("Could not apply the patch to the file: '" + doc + ".");
-			e.printStackTrace();
-		}
+		o = dmp.patch_apply(patchList, openReadFile(doc));
 		String s = (String)o[0];
-		try {
-			openWriteFile(doc, s);
-		} catch (IOException e) {
-			// TODO Print to the console
-			System.out.println("Could not open the file: '" + doc + ". File is busy.");
-			e.printStackTrace();
-		}
+		openWriteFile(doc, s);
 	}
 	
 	/**
 	 * Opens and read all data from the file.
 	 * 
 	 * @param filePath Path to the file to be read.
-	 * @return The data from the file.
-	 * @throws IOException Throws IO Exception when the document can't be opened.
+	 * @return The data from the file. null if the file could not be opened.
 	 */
-	protected String openReadFile(Path filePath) throws IOException{
+	protected String openReadFile(Path filePath){
 		String line;
 		StringBuilder sb = new StringBuilder();
 		// Read the document
-		BufferedReader reader = Files.newBufferedReader(filePath, ENCODING);
-		// Append each line in the document to our string
-		while ((line = reader.readLine()) != null) {
-			sb.append(line);
-			sb.append("\n"); // readLine discards new-row characters, re-append them.
+		BufferedReader reader;
+		try {
+			reader = Files.newBufferedReader(filePath, ENCODING);
+			// Append each line in the document to our string
+			while ((line = reader.readLine()) != null) {
+				sb.append(line);
+				sb.append("\n"); // readLine discards new-row characters, re-append them.
+			}
+			if(sb.length() != 0){
+				sb.deleteCharAt(sb.length()-1); // However last line doesn't contain one, remove it.
+			}
+			reader.close();
+			return new String(sb.toString());
+		} catch (IOException e) {
+			// TODO Print to console
+			System.out.println("Could not write to " + filePath.toString());
+			e.printStackTrace();
 		}
-		if(sb.length() != 0){
-			sb.deleteCharAt(sb.length()-1); // However last line doesn't contain one, remove it.
-		}
-		reader.close();
-		return new String(sb.toString());
+		
+		return null;
 	}
 	
 	/**
@@ -197,11 +188,17 @@ public class SynchronizeRoot {
 	 * 
 	 * @param filePath Path to the file to write too.
 	 * @param s String containing the data to be written.
-	 * @throws IOException Throws IO Exception when the file can't be opened.
 	 */
-	protected void openWriteFile(Path filePath, String s) throws IOException{
-		BufferedWriter writer = Files.newBufferedWriter(filePath, ENCODING);
-		writer.write(s, 0, s.length());
-		writer.close();
+	protected void openWriteFile(Path filePath, String s){
+		BufferedWriter writer;
+		try {
+			writer = Files.newBufferedWriter(filePath, ENCODING);
+			writer.write(s, 0, s.length());
+			writer.close();
+		} catch (IOException e) {
+			// TODO Print to console
+			System.out.println("Could not write to " + filePath.toString());
+			e.printStackTrace();
+		}
 	}
 }

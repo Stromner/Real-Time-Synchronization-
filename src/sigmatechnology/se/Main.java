@@ -1,41 +1,24 @@
 package sigmatechnology.se;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
-import java.util.LinkedList;
 
 import sigmatechnology.se.diff_match_patch.SynchronizeRoot;
-import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Diff;
 
 
 public class Main {
 	public static void main(String[] args) throws InterruptedException {
-		Path doc = Paths.get("");
-		Path testFileSend = Paths.get("send.txt");
+		String sRepo1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/",
+			sRepo2 = "src/sigmatechnology/se/diff_match_patch/TestRepo2/";
+		Path repo1 = Paths.get(sRepo1);
+		Path repo2 = Paths.get(sRepo2);
 		
-		Path testFileRecieve = Paths.get("recieve.txt");
-		SynchronizeRoot sync = new SynchronizeRoot(doc, null);
+		SynchronizeRoot sync1 = new SynchronizeRoot(repo1, null);
+		SynchronizeRoot sync2 = new SynchronizeRoot(repo2, null);
 		
 		while(true){
-			Thread.sleep(2000);
-			LinkedList<Diff> list = sync.getDiff(testFileSend);
-			try{
-				System.out.println("Difference in files: ");
-				
-				Iterator<Diff> it = list.iterator();
-				while(it.hasNext()){
-					Diff d = it.next();
-					System.out.println(d.toString());
-				}
-				System.out.println();
-				
-				sync.applyDiff(list, testFileRecieve);
-				
-			}
-			catch(IndexOutOfBoundsException e2){}
-			catch(NullPointerException e2){
-				System.out.println("Null");
-			}
+			Thread.sleep(10000);
+			System.out.println("New diff cycle:");
+			sync2.applyDiffs(sync1.getDiffs());
 		}
 	}
 }

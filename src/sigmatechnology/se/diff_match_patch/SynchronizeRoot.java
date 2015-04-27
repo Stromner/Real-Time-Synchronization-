@@ -1,21 +1,19 @@
 package sigmatechnology.se.diff_match_patch;
 /**
- * Can keep an entire root folder in sync and ignore a subset of folders and 
- * files inside the root. Meant to be run over network however works exactly 
- * the same way if it were to be run locally. The only exception is that two 
- * instances of the program needs to be active for it to work.
+ * Keep a root folder root folder in sync and provides support for ignore a 
+ * subset of folders and files inside the root. Meant to be run over network 
+ * however works exactly the same way if it were to be run locally. The only 
+ * exception is that two instances of the program needs to be active for it 
+ * to work and they are set up for different repos.
  * 
  * To refresh the root folder the updateRoot() method needs to be called 
  * explicitly. The only time it's called implicitly is when SynchronizeRoot is 
  * created.
  * 
  * @author David Strömner
- * @date 2015-04-26
+ * @date 2015-04-27
  */
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import sigmatechnology.se.Util;
 import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch;
 import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Diff;
 import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Operation;
@@ -35,13 +34,13 @@ public class SynchronizeRoot {
 	private diff_match_patch dmp;
 	private Path root;
 	private List<Path> ignore;
-	private Map<String, PathWithData> rootMap;
+	private Map<String, SynchronizeDocument> rootMap;
 	
 	/**
 	 * Initialize the synchronization object by searching through the provided root folder.
-	 * Each file inside the root folder will be synchronized.
+	 * Each file inside the root folder and not on the ignore list will be synchronized.
 	 * 
-	 * @param doc Root to search through.
+	 * @param doc Root to synchronize.
 	 * @param ignoreDocs Files and folders inside the root to ignore. Null if everything
 	 * should be included.
 	 */
@@ -53,7 +52,7 @@ public class SynchronizeRoot {
 		root = doc;
 		ignore = ignoreDocs;
 		dmp = new diff_match_patch();
-		rootMap = new HashMap<String,PathWithData>();
+		rootMap = new HashMap<String,SynchronizeDocument>();
 		update();
 	}
 	
@@ -80,7 +79,8 @@ public class SynchronizeRoot {
 				    		}
 			    		}
 			    		if(notIgnored){
-							rootMap.put(filePath.toString(), new PathWithData(filePath, openReadFile(filePath)));
+			    			Path p = root.relativize(filePath);
+							rootMap.put(p.toString(), new SynchronizeDocument(p, Util.openReadFile(filePath)));
 			    		}
 			    	}
 			    }
@@ -92,11 +92,11 @@ public class SynchronizeRoot {
 		}
 		
 		// If any files were removed update the rootMap.
-		Iterator it = rootMap.entrySet().iterator();
+		Iterator<?> it = rootMap.entrySet().iterator();
 	    while (it.hasNext()) {
-	        Map.Entry pair = (Map.Entry)it.next();
-	        PathWithData pwd = (PathWithData)pair.getValue();
-	        if(!pwd.getPath().toFile().exists()){
+	        Map.Entry<?,?> pair = (Map.Entry<?,?>)it.next();
+	        SynchronizeDocument sd = (SynchronizeDocument)pair.getValue();
+	        if(!root.resolve(sd.getPath()).toFile().exists()){
 	        	it.remove();
 	        }
 	    }
@@ -107,6 +107,38 @@ public class SynchronizeRoot {
 	}
 	
 	/**
+	 * Calculate a diff for each of the synchronized files. If no changes have been made 
+	 * since last call its still included in the list as a simple element saying everything is equal.
+	 * 
+	 * @return All the diffs for the different documents.
+	 */
+	public LinkedList<SynchronizeDocument> getDiffs(){
+		LinkedList<SynchronizeDocument> l = new LinkedList<SynchronizeDocument>();
+		Iterator<?> it = rootMap.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry<?,?> pair = (Map.Entry<?,?>)it.next();
+	        SynchronizeDocument sd = (SynchronizeDocument)pair.getValue();
+	        sd.setDiffs(getDiff(sd.getPath()));
+	        l.add(sd);
+	    }
+	    
+	    return l;
+	}
+	
+	/**
+	 * Applies each diff in the list to the corresponding document. 
+	 * 
+	 * @param diffs list of diffs to be applied to the document.
+	 */
+	public void applyDiffs(LinkedList<SynchronizeDocument> diffs){
+		SynchronizeDocument sd;
+		for(int i=0;i<diffs.size();i++){
+			sd = diffs.get(i);
+			applyDiff(sd.getDiffs(),root.resolve(sd.getPath()));
+		}
+	}
+	
+	/**
 	 * Calculates a diff between the old version of a document and the current version of 
 	 * the document. If a modifications is spotted it will reflect so in the return.
 	 * 
@@ -114,17 +146,16 @@ public class SynchronizeRoot {
 	 * @return A list containing the calculate diff between the old document 
 	 * and the current one. null if the document could not be open/found.
 	 */
-	public LinkedList<Diff> getDiff(Path doc){
-		PathWithData file;
+	private LinkedList<Diff> getDiff(Path doc){
+		SynchronizeDocument file;
 		if((file = rootMap.get(doc.toString())) == null){
 			return null;
 		}
 		String modifiedString = "";
 		
-		modifiedString = openReadFile(doc);
+		modifiedString = Util.openReadFile(root.resolve(doc));
 		LinkedList<Diff> list = dmp.diff_main(file.getData(),modifiedString, true);
 		file.setData(modifiedString);
-		
 		return list;
 	}
 	
@@ -136,69 +167,20 @@ public class SynchronizeRoot {
 	 * @param diffList List containing the diffs that should be applied.
 	 * @param doc File to apply the diffs to.
 	 */
-	public void applyDiff(LinkedList<Diff> diffList, Path doc){
+	private void applyDiff(LinkedList<Diff> diffList, Path doc){
 		// If we can't fetch the first element then the document is empty, nothing to do.
 		// If there is only one element and that element is equal then no modifications have
 		// been made.
-		if((diffList.get(0) == null) || (diffList.get(0).operation == Operation.EQUAL && diffList.size() == 1)){
+		if(diffList == null || 
+				(diffList.size() == 0) || 
+				(diffList.get(0).operation == Operation.EQUAL && diffList.size() == 1)){
 			return;
 		}
 		
 		LinkedList<Patch> patchList = dmp.patch_make(diffList);
 		Object o[] = null;
-		o = dmp.patch_apply(patchList, openReadFile(doc));
+		o = dmp.patch_apply(patchList, Util.openReadFile(doc));
 		String s = (String)o[0];
-		openWriteFile(doc, s);
-	}
-	
-	/**
-	 * Opens and read all data from the file.
-	 * 
-	 * @param filePath Path to the file to be read.
-	 * @return The data from the file. null if the file could not be opened.
-	 */
-	protected String openReadFile(Path filePath){
-		String line;
-		StringBuilder sb = new StringBuilder();
-		// Read the document
-		BufferedReader reader;
-		try {
-			reader = Files.newBufferedReader(filePath, ENCODING);
-			// Append each line in the document to our string
-			while ((line = reader.readLine()) != null) {
-				sb.append(line);
-				sb.append("\n"); // readLine discards new-row characters, re-append them.
-			}
-			if(sb.length() != 0){
-				sb.deleteCharAt(sb.length()-1); // However last line doesn't contain one, remove it.
-			}
-			reader.close();
-			return new String(sb.toString());
-		} catch (IOException e) {
-			// TODO Print to console
-			System.out.println("Could not write to " + filePath.toString());
-			e.printStackTrace();
-		}
-		
-		return null;
-	}
-	
-	/**
-	 * Open and write all new data to a file.
-	 * 
-	 * @param filePath Path to the file to write too.
-	 * @param s String containing the data to be written.
-	 */
-	protected void openWriteFile(Path filePath, String s){
-		BufferedWriter writer;
-		try {
-			writer = Files.newBufferedWriter(filePath, ENCODING);
-			writer.write(s, 0, s.length());
-			writer.close();
-		} catch (IOException e) {
-			// TODO Print to console
-			System.out.println("Could not write to " + filePath.toString());
-			e.printStackTrace();
-		}
+		Util.openWriteFile(doc, s);
 	}
 }

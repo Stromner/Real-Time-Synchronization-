@@ -3,17 +3,17 @@ package sigmatechnology.se.diff_match_patch;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Scanner;
 
 import junit.framework.TestCase;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import sigmatechnology.se.Util;
 
 public class SynchronizeRootTest extends TestCase{
 	private String sRepo1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/",
@@ -25,18 +25,16 @@ public class SynchronizeRootTest extends TestCase{
 				sSend1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/send.txt",
 				sSend2 = "src/sigmatechnology/se/diff_match_patch/TestRepo2/send.txt",
 				sRecieve1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/recieve.txt",
-				sRecieve2 = "src/sigmatechnology/se/diff_match_patch/TestRepo2/recieve.txt",
-				sRoot = "";
-	private Path docSend, docRecieve, root;
-	private SynchronizeRoot sync;
+				sRecieve2 = "src/sigmatechnology/se/diff_match_patch/TestRepo2/recieve.txt";
+	private Path docSend1, docSend2, repo1, repo2;
+	private SynchronizeRoot syncRepo1, syncRepo2;
 	private static Boolean oneTimeSetUpDone = false;
 	
 	@Before
 	public void setUp(){
 		if(!oneTimeSetUpDone){
-			root = Paths.get(sRoot);
-			prepareFolder(sRepo1);
-			prepareFolder(sRepo2);
+			repo1 = prepareFolder(sRepo1);
+			repo2 = prepareFolder(sRepo2);
 			prepareFolder(sIgnoreFolder1);
 			prepareFolder(sIgnoreFolder2);
 			prepareFile(sIgnoreFile1);
@@ -45,15 +43,18 @@ public class SynchronizeRootTest extends TestCase{
 			prepareFile(sSend2);
 			prepareFile(sRecieve1);
 			prepareFile(sRecieve2);
-			docSend = prepareFile(sSend1);
-			docRecieve = prepareFile(sRecieve2);
-			sync = new SynchronizeRoot(root, null);
+			docSend1 = prepareFile(sSend1);
+			docSend2 = prepareFile(sSend2);
+			syncRepo1 = new SynchronizeRoot(repo1, null);
+			syncRepo2 = new SynchronizeRoot(repo2, null);
 		}
 		
-		sync.update();
-		sync.setIgnoreList(null);
+		syncRepo1.update();
+		syncRepo1.setIgnoreList(null);
+		syncRepo2.update();
+		syncRepo2.setIgnoreList(null);
 		emptyFile(sSend1);
-		emptyFile(sRecieve1);
+		emptyFile(sSend2);
 	}
 	
 	//
@@ -61,92 +62,98 @@ public class SynchronizeRootTest extends TestCase{
 	//
 	@Test
 	public void testEmptyToOneChar(){
-		sync.openWriteFile(docSend, "a");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
+		Util.openWriteFile(docSend1, "a");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals("a"));
 	}
 	
 	@Test
 	public void testOneCharToEmpty(){
-		sync.openWriteFile(docSend, "a");
-		sync.getDiff(docSend); // Update the base string
+		Util.openWriteFile(docSend1, "a");
+		syncRepo1.getDiffs(); // Update the base string
 		
-		sync.openWriteFile(docSend, "");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals(""));
+		Util.openWriteFile(docSend1, "");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals(""));
 	}
 	
 	@Test
 	public void testOneRowToMany(){
-		sync.openWriteFile(docSend, "a");
-		sync.openWriteFile(docRecieve, "a");
-		sync.getDiff(docSend); // Update the base string
+		Util.openWriteFile(docSend1, "a");
+		Util.openWriteFile(docSend2, "a");
+		syncRepo1.getDiffs(); // Update the base string
+		syncRepo2.getDiffs(); // Update the base string
 		
-		sync.openWriteFile(docSend, "a\na");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals("a\na"));
+		Util.openWriteFile(docSend1, "a\na");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals("a\na"));
 	}
 	
 	@Test
 	public void testManyRowToOne(){
-		sync.openWriteFile(docSend, "a\na");
-		sync.openWriteFile(docRecieve, "a\na");
-		sync.getDiff(docSend); // Update the base string
+		Util.openWriteFile(docSend1, "a\na");
+		Util.openWriteFile(docSend2, "a\na");
+		syncRepo1.getDiffs(); // Update the base string
+		syncRepo2.getDiffs(); // Update the base string
 		
-		sync.openWriteFile(docSend, "a");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
+		Util.openWriteFile(docSend1, "a");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals("a"));
 	}
 	
 	@Test
 	public void testManyRowsToLess(){
-		sync.openWriteFile(docSend, "a\nb\nc\nd");
-		sync.openWriteFile(docRecieve, "a\nb\nc\nd");
-		sync.getDiff(docSend); // Update the base string
+		Util.openWriteFile(docSend1, "a\nb\nc\nd");
+		Util.openWriteFile(docSend2, "a\nb\nc\nd");
+		syncRepo1.getDiffs(); // Update the base string
+		syncRepo2.getDiffs(); // Update the base string
 		
-		sync.openWriteFile(docSend, "a\nb\nd");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals("a\nb\nd"));
+		Util.openWriteFile(docSend1, "a\nb\nd");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals("a\nb\nd"));
 	}
 	
 	@Test
 	public void testManyRowsToMore(){
-		sync.openWriteFile(docSend, "a\nb\nc\nd");
-		sync.openWriteFile(docRecieve, "a\nb\nc\nd");
-		sync.getDiff(docSend); // Update the base string
+		Util.openWriteFile(docSend1, "a\nb\nc\nd");
+		Util.openWriteFile(docSend2, "a\nb\nc\nd");
+		syncRepo1.getDiffs(); // Update the base string
+		syncRepo2.getDiffs(); // Update the base string
 		
-		sync.openWriteFile(docSend, "a\nb\nbb\nc\ncc\nd");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals("a\nb\nbb\nc\ncc\nd"));
+		Util.openWriteFile(docSend1, "a\nb\nbb\nc\ncc\nd");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals("a\nb\nbb\nc\ncc\nd"));
 	}
 	
 	@Test
 	public void testDifferenceBetweenFiles(){
-		sync.openWriteFile(docSend, "abba\ndabba\ncabba\ndabba");
-		sync.openWriteFile(docRecieve, "abba\ndabba\nMOLA\ndabba");
-		sync.getDiff(docSend); // Update the base string
+		Util.openWriteFile(docSend1, "abba\ndabba\ncabba\ndabba");
+		Util.openWriteFile(docSend2, "abba\ndabba\nMOLA\ndabba");
+		syncRepo1.getDiffs(); // Update the base string
+		syncRepo2.getDiffs(); // Update the base string
 		
-		sync.openWriteFile(docSend, "abba\ndabba\ncabba123\ndabba");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals("abba\ndabba\nMOLA123\ndabba"));
+		Util.openWriteFile(docSend1, "abba\ndabba\ncabba123\ndabba");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals("abba\ndabba\nMOLA123\ndabba"));
 	}
 	
 	@Test
 	public void testSwedishCharacters(){
-		sync.openWriteFile(docSend, "едц");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals("едц"));
+		Util.openWriteFile(docSend1, "едц");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals("едц"));
 	}
 	
 	@Test
 	public void testReplaceDocument(){
-		sync.openWriteFile(docSend, "One day I went to the forrest\nto pick some flowers.");
-		sync.openWriteFile(docRecieve, "One day I went to the forrest\nto pick some flowers.");
-		sync.getDiff(docSend); // Update the base string
+		Util.openWriteFile(docSend1, "One day I went to the forrest\nto pick some flowers.");
+		Util.openWriteFile(docSend2, "One day I went to the forrest\nto pick some flowers.");
+		syncRepo1.getDiffs(); // Update the base string
+		syncRepo2.getDiffs(); // Update the base string
 		
-		sync.openWriteFile(docSend, "I cut hair for a living.");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals("I cut hair for a living."));
+		Util.openWriteFile(docSend1, "I cut hair for a living.");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals("I cut hair for a living."));
 	}
 	
 	//
@@ -155,29 +162,29 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testDocumentAsRoot(){
-		sync = new SynchronizeRoot(docSend, null);
+		SynchronizeRoot sync1 = new SynchronizeRoot(docSend1, null);
+		SynchronizeRoot sync2 = new SynchronizeRoot(docSend2, null);
 		
-		sync.openWriteFile(docSend, "a");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve);
-		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
+		Util.openWriteFile(docSend1, "a");
+		sync2.applyDiffs(sync1.getDiffs());
+		assertEquals(true, Util.openReadFile(docSend2).equals("a"));
 	}
 	
 	@Test
 	public void testTwoDocumentsSync(){
 		// Fetch the path for the two test documents extra text documents created
 		// at the start.
-		Path docSend2 = prepareFile(sSend2),
-				docRecieve2 = prepareFile(sRecieve1);
-		sync.update();
+		Path docRecieve1 = prepareFile(sRecieve1),
+				docRecieve2 = prepareFile(sRecieve2);
 		
-		sync.openWriteFile(docSend, "a");
-		sync.applyDiff(sync.getDiff(docSend), docRecieve); 
+		Util.openWriteFile(docSend1, "a");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs()); 
 		
-		sync.openWriteFile(docSend2, "a");
-		sync.applyDiff(sync.getDiff(docSend2), docRecieve2);
+		Util.openWriteFile(docRecieve1, "a");
+		syncRepo2.applyDiffs(syncRepo1.getDiffs());
 
-		assertEquals(true, sync.openReadFile(docRecieve).equals("a"));
-		assertEquals(true, sync.openReadFile(docRecieve2).equals("a"));
+		assertEquals(true, Util.openReadFile(docSend2).equals("a"));
+		assertEquals(true, Util.openReadFile(docRecieve2).equals("a"));
 	}
 	
 	@Test
@@ -186,10 +193,12 @@ public class SynchronizeRootTest extends TestCase{
 		List<Path> ll = new LinkedList<Path>();
 		Path p = prepareFile(sIgnoreFile1);
 		ll.add(p);
-		sync = new SynchronizeRoot(root, ll);
+		SynchronizeRoot sync = new SynchronizeRoot(repo1, ll);
 		
-		sync.openWriteFile(p, "abc");
-		assertEquals(true, sync.getDiff(p) == null);
+		LinkedList<SynchronizeDocument> l = sync.getDiffs();
+		for(int i = 0;i<l.size();i++){
+			assertEquals(true, repo1.resolve(l.get(i).getPath()).compareTo(Paths.get(sIgnoreFile1)) != 0);
+		}
 		
 		// Test for folder, if a folder is ignored everything inside it should also be ignored
 		ll.remove(0);
@@ -197,19 +206,10 @@ public class SynchronizeRootTest extends TestCase{
 		ll.add(p2);
 		sync.setIgnoreList(ll);
 		
-		sync.openWriteFile(p, "abc");
-		assertEquals(true, sync.getDiff(p) == null);
-	}
-	
-	@Test
-	// Can not automate a test for remove folder, to remove a folder from inside Java all files inside it needs 
-	// to be removed first. If so can not guarantee that the folder remove is run before the files removes which 
-	// would render the test moot. 
-	public void testRemoveFile() throws IOException{
-		Path p = prepareFile(sIgnoreFile1);
-		Files.delete(p);
-		sync.update();
-		assertEquals(true, sync.getDiff(p) == null);
+		l = sync.getDiffs();
+		for(int i = 0;i<l.size();i++){
+			assertEquals(true, repo1.resolve(l.get(i).getPath()).compareTo(Paths.get(sIgnoreFile1)) != 0);
+		}
 	}
 	
 	private Path prepareFile(String s){

@@ -1,83 +1,53 @@
 package network;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.InetAddress;
-import java.net.Socket;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.net.UnknownHostException;
 
 public class ClientConnection {
+	Socket socket;
+	String serverIP = "127.0.0.1";
+	int port = 20001;
+	String nickname;
+	ClientReceiver cr;
+	ObjectOutputStream oos;
+	ObjectInputStream ois;
 	
-	public final static char REG  = 1;
-	public final static char DIFF = 2;
-	public final static char CHAT = 3;
-	
-	public ClientConnection(){
-		connect();
+	public ClientConnection(String nickname){
+		try {
+			socket = new Socket(serverIP, port);
+			oos = new ObjectOutputStream(socket.getOutputStream());
+			oos.flush(); //Needs to happen before the InputStream server side
+			ois = new ObjectInputStream(socket.getInputStream());
+			
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		this.nickname = nickname;
+		//Start listening/waiting for packets on the socket
+		cr = new ClientReceiver(socket, ois);
+		cr.start();
+		//TestSend
+		send(new Packet(PacketType.REGISTER, nickname));
+		//send(new Packet(PacketType.CHAT, "Magnus", "message"));
 	}
-	
-	//Temp method name
-	public void connect(){
-		String host = "127.0.0.1";
-	    /** Define a port */
-	    int port = 20001;
 
-	    StringBuffer instr = new StringBuffer();
-	    String TimeStamp;
-	    System.out.println("SocketClient initialized");
-	    
-	    try {
-	        /** Obtain an address object of the server */
-	        InetAddress address = InetAddress.getByName(host);
-	        /** Establish a socket connetion */
-	        Socket socket = new Socket(address, port);
-	        /** Instantiate a BufferedOutputStream object */
-	        BufferedOutputStream bos = new BufferedOutputStream(socket.getOutputStream());
-	        /** Instantiate an OutputStreamWriter object with the optional character
-	         * encoding.
-	         * with OutputStreamWriter you can pass objects such as Strings without converting to byte, byte arrays, or int values…ok I’m lazy…so what.
-	         */
-	        OutputStreamWriter osw = new OutputStreamWriter(bos, "US-ASCII");
-	        
-	        TimeStamp = new java.util.Date().toString();
-	        
-	        String process = "Calling the Socket Server on "+ host + " port " + port + " at " + TimeStamp +  (char) 13;
-	        
-	        /** Write across the socket socket and flush the buffer */
-	        osw.write(process);
-	        
-	        osw.flush();
-	        
-	        /** Instantiate a BufferedInputStream object for reading
-	        /** Instantiate a BufferedInputStream object for reading
-	         * incoming socket streams.
-	         */
-
-	        BufferedInputStream bis = new BufferedInputStream(socket.getInputStream());
-	        
-	        /**Instantiate an InputStreamReader with the optional
-	         * character encoding.
-	         */
-
-	        InputStreamReader isr = new InputStreamReader(bis, "US-ASCII");
-	        
-	        /**Read the socket's InputStream and append to a StringBuffer */
-	        int c;
-	        while ( (c = isr.read()) != 13){
-	        	instr.append( (char) c);
-	        }
-	        /** Close the socket socket. */
-	        socket.close();
-	        System.out.println(instr);
-	    }
-	    catch (IOException f) {
-	    	System.out.println("3 IOException: " + f);
-	    }
-	    catch (Exception g) {
-	        System.out.println("4 Exception: " + g);
-	    }
-
-	}
+	/**
+	 * Sends packet via socket to the server
+	 * @param packet
+	 */
+	void send(Packet packet){
+		try{
+			System.out.println("Before flush: Attempt to send from CC");
+			oos.writeObject(packet);
+			oos.flush();
+			System.out.println("After flush: Attempt to send from CC");
+		}
+		catch(IOException e){}
+	} 
 }

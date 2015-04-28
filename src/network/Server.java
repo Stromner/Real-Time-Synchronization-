@@ -1,14 +1,11 @@
 package network;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-
 
 /**
  * Single socket server
@@ -16,81 +13,64 @@ import java.util.Map;
  * http://edn.embarcadero.com/article/31995
  */
 public class Server implements Runnable{
-	
-	public final static char REG  = 1;
-	public final static char DIFF = 2;
-	public final static char CHAT = 3;
-	protected final static int port = 20001;//19999;
-	static ServerSocket serverSocket;
-	static Socket socket;
 
-	static boolean first;
-	static StringBuffer process;
-	static String timeStamp;
-	static Map<String, String> nickAndIP;
+	int portIn  = 20001;//19999;
+	int portOut = 19999;
+	ServerSocket serverSocket;
+	//static Socket socket;
+	String timeStamp;
+	static Map<String, Socket> nickAndSocket;
+	static Map<String, ServerConnectionThread> nickAndThread;
+	ArrayList<ServerConnectionThread> connectionThreads; //Can administer from nickAndThread?
+	Iterator<ServerConnectionThread> it;
 	
 	public Server(){
-		nickAndIP = new HashMap<String, String>();
+		nickAndSocket = new HashMap<String, Socket>();
+		nickAndThread = new HashMap<String, ServerConnectionThread>();
+		connectionThreads = new ArrayList<ServerConnectionThread>();
 		//run();
 	}
 	public void run(){
 		try{
-			socket.close();
-		}
-		catch(Exception e){
-			System.out.println("socket.close();");
-		}
-		try{
-			serverSocket.close();
-		}
-		catch(Exception e){
-			System.out.println("serverSocket.close();");
-		}
-		try{
-			serverSocket = new ServerSocket(port);
+			//Check if port available 
+			//Inside loop?
+			serverSocket = new ServerSocket(portIn);
 			System.out.println("SingleSocketServer Initialized");
-			int character;
 		
+			int i = 0;
 			while (true) {
-				// 	System.out.println(222);
-		        socket = serverSocket.accept();
+				Socket socket = serverSocket.accept();
+		        //Do connectionThreads check and remove threads no longer in use from the list.
+		        //removeFinishedThreads();
+		        System.out.println(i);
+		        //When are they removed from the list? 
+		        ServerConnectionThread ct = new ServerConnectionThread(socket);
+		        ct.start();
+		        System.out.println("here");
+		        i++;
+		        connectionThreads.add(ct);
 		        
-		        BufferedInputStream is = new BufferedInputStream(socket.getInputStream());
-		        InputStreamReader isr = new InputStreamReader(is);
-
-		        process = new StringBuffer();
-		        while((character = isr.read()) != 13) {
-		        	process.append((char)character);
-		        }
-		        System.out.println(process);
-		        
-		        //need to wait 10 seconds for the app to update database
-		        try {
-		        	/**
-		        	 * All I’m doing here is putting the current thread to sleep for 
-		        	 * 10 seconds. I added this piece of code is purely for the purpose 
-		        	 * of demonstrating socket connections. It would not be used in a 
-		        	 * real-world server application.
-		        	 */
-		        	System.out.println("1 sec sleep (Server)");
-		        	Thread.sleep(1000);
-		        }
-		        catch (Exception e){System.out.println(e);}
-		        timeStamp = new java.util.Date().toString();
-		        String returnCode = "SingleSocketServer repsonded at "+ timeStamp + (char) 13;
-		        
-		        BufferedOutputStream os = new BufferedOutputStream(socket.getOutputStream());
-		        OutputStreamWriter osw = new OutputStreamWriter(os, "US-ASCII");
-		        
-		        osw.write(returnCode);
-		        osw.flush();
 		    }
 	    }
-	    catch (IOException e) {System.out.println("1 IOE: "+e);}
-		try{socket.close();
-			serverSocket.close();
+	    catch (IOException e) {e.printStackTrace();}
+		catch (Exception e) {e.printStackTrace();}
+		finally{
+			try{
+				//serverSocket.close();
+			}
+			catch(Exception e){e.printStackTrace();}
 		}
-		catch(IOException e){}
+
 	}
-	
+	//Better to call when they get interrupted
+	/*
+	private void removeFinishedThreads() {
+		it = connectionThreads.iterator();
+		while(it.hasNext()){
+			if(!it.next().isRunning || !it.next().isInterrupted()){
+				it.remove();
+			}
+		}
+	}
+	*/
 }	

@@ -11,36 +11,45 @@ import diff_match_patch.fraser_neil.diff_match_patch.Diff;
  * chat - Message for the chat
  * timestamp - Timestamp for chat
  * 
- * 
  * @author Magnus
  *
  */
 public class Packet implements Serializable{
-	public int type = 0;
-	public LinkedList<Diff> diffs = null;
-	public String chatMsg = null;
-	public String timeStamp = null;
-	public String destinationIP = null;
-	public String nickname = null;
+	/**
+	 * Generated serialVersionUID
+	 */
+	private static final long serialVersionUID = -4289306338701482203L;
+	PacketType type = null;
+	LinkedList<Diff> diffs = null;
+	String chatMsg = null;
+	String timeStamp = null;
+	String sourceNick = null;
+	String destinationNick = null;
+	
+	//Request nickAndIPs?
+	public Packet(){
+	}
 	
 	//Registration - To server
-	public Packet(int type, String nickname){
+	public Packet(PacketType type, String sourceNick){
 		this.type = type;
-		this.nickname= nickname;
+		this.sourceNick= sourceNick;
 	}
 	
 	//Diff - To server
-	public Packet(int type, String destinationIP, LinkedList<Diff> diffs){
+	public Packet(PacketType type, String sourceNick, String destinationNick, LinkedList<Diff> diffs){
 		this.type = type;
 		this.diffs = diffs;
-		this.destinationIP = destinationIP;
+		this.sourceNick = sourceNick;
+		this.destinationNick = destinationNick;
 	}
 	
 	//Chat - To server
-	public Packet(int type, String destinationIP, String chatMsg, String timeStamp){
+	public Packet(PacketType type, String sourceNick, String destinationNick, String chatMsg){
 		this.type = type;
 		this.chatMsg = chatMsg;
-		this.timeStamp = timeStamp;
-		this.destinationIP = destinationIP;
+		this.sourceNick = sourceNick;
+		this.destinationNick = destinationNick;
+		this.timeStamp = new java.util.Date().toString();
 	}
 }

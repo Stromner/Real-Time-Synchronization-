@@ -1,16 +1,25 @@
 package network;
 
+import java.util.Scanner;
+
 public class Main2 {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
-		ClientConnection cc, cc2;
-		//(new Thread(new Server())).start();
-		cc = new ClientConnection();
-		Thread thread = new Thread(new Server());
-		thread.start();
+		String data, data2;
 		
+		(new Thread(new Server())).start();
+		Scanner scanInput = new Scanner(System.in);
+		data = scanInput.nextLine();
+		ClientConnection cc3 = new ClientConnection(data);
+		data2 = scanInput.nextLine();
+		ClientConnection cc32 = new ClientConnection(data2);
+		scanInput.close();
+		cc3.send(new Packet(PacketType.CHAT, data, data2, "TestMessage"));
+		
+		
+		/*
 		try {
 			Thread.sleep(5000);
 			System.out.println("5 sec sleep(Between second send)");
@@ -19,6 +28,8 @@ public class Main2 {
 			e.printStackTrace();
 		}
 		cc2 = new ClientConnection();
+		*/
+		
 		//server.run();
 		//cc.connect();
 		

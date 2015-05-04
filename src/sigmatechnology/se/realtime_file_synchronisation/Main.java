@@ -11,15 +11,28 @@ import sigmatechnology.se.realtime_file_synchronisation.network.Server;
 
 
 public class Main {	
-	public static void main(String[] args) throws InterruptedException {
-		// Start client
-		// Get diffs
-		// 1) From Eclipse
-		// 2) From other files
+	public static void main(String[] args) throws InterruptedException {		
+		// Create client
+		//	Connect to the server
+		//	Fetch user list
+		//	Display user list
+		// Wait for our user to select a user and press connect
+		// Create connection with other user
+		// Create SynchronizeRoot
+		// Loop
+		// 	Get diffs
+		// 	1) From Eclipse
+		// 	2) From other files
 		// Send diffs
-		// Patch diffs
-		// 1) To Eclipse
-		// 2) To other files
+		// End Loop
+		
+		// Client receive thread
+		// Wait for package
+		// Handle package
+		// 	If package of patch type
+		//	Patch diffs
+		// 	1) To Eclipse
+		// 	2) To other files
 		
 		String data, data2;
 		

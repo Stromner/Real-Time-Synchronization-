@@ -34,7 +34,7 @@ public class ClientConnection {
 		cr = new ClientReceiver(socket, ois);
 		cr.start();
 		//TestSend
-		send(new Packet(PacketType.REGISTER, nickname));
+		send(new Packet(Packet.PacketType.REGISTER, nickname));
 		//send(new Packet(PacketType.CHAT, "Magnus", "message"));
 	}
 

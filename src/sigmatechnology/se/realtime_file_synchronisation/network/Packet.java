@@ -14,7 +14,14 @@ import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_
  * @author Magnus
  *
  */
+
+
 public class Packet implements Serializable{
+	
+	public enum PacketType {
+		REGISTER, DIFF, CHAT, END, SYNCFILE;
+	}
+	
 	/**
 	 * Generated serialVersionUID
 	 */

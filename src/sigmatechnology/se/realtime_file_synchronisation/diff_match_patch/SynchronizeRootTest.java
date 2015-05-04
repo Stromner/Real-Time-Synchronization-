@@ -1,4 +1,4 @@
-package sigmatechnology.se.diff_match_patch;
+package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,19 +13,19 @@ import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 
-import sigmatechnology.se.Util;
+import sigmatechnology.se.realtime_file_synchronisation.Util;
 
 public class SynchronizeRootTest extends TestCase{
-	private String sRepo1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/",
-				sRepo2 = "src/sigmatechnology/se/diff_match_patch/TestRepo2/",
-				sIgnoreFolder1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/Ignore",
-				sIgnoreFolder2 = "src/sigmatechnology/se/diff_match_patch/TestRepo2/Ignore",
-				sIgnoreFile1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/Ignore/test.txt",
-				sIgnoreFile2 = "src/sigmatechnology/se/diff_match_patch/TestRepo2/Ignore/test.txt",
-				sSend1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/send.txt",
-				sSend2 = "src/sigmatechnology/se/diff_match_patch/TestRepo2/send.txt",
-				sRecieve1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/recieve.txt",
-				sRecieve2 = "src/sigmatechnology/se/diff_match_patch/TestRepo2/recieve.txt";
+	private String sRepo1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/",
+				sRepo2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/",
+				sIgnoreFolder1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/Ignore",
+				sIgnoreFolder2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/Ignore",
+				sIgnoreFile1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/Ignore/test.txt",
+				sIgnoreFile2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/Ignore/test.txt",
+				sSend1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/send.txt",
+				sSend2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/send.txt",
+				sRecieve1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/recieve.txt",
+				sRecieve2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/recieve.txt";
 	private Path docSend1, docSend2, repo1, repo2;
 	private SynchronizeRoot syncRepo1, syncRepo2;
 	private static Boolean oneTimeSetUpDone = false;

@@ -1,8 +1,15 @@
 # Ignore all files and sub-directories
 /*
 /*/
-# Except for these files
+
+# Except for these files and sub-directories
 !/src/
 !/include/
+!/icons/
+!/META-INF/
 !.gitignore
+!.plugin.xml
+
 # But ignore these sub files in the allowed files
+/src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1
+/src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2

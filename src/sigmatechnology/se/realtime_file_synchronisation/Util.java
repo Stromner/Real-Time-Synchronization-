@@ -1,4 +1,4 @@
-package sigmatechnology.se;
+package sigmatechnology.se.realtime_file_synchronisation;
 
 /**
  * Utility class for misc methods.
@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import sigmatechnology.se.diff_match_patch.SynchronizeRoot;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.SynchronizeRoot;
 
 public class Util {
 	/**

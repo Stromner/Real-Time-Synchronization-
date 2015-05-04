@@ -1,4 +1,4 @@
-package sigmatechnology.se.diff_match_patch;
+package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
 
 /**
  * Helper class for SynchronizeRoot, stores a path, its data and a diff list. 
@@ -11,7 +11,7 @@ package sigmatechnology.se.diff_match_patch;
 import java.nio.file.Path;
 import java.util.LinkedList;
 
-import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Diff;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Diff;
 
 public class SynchronizeDocument {
 	private Path path;

@@ -1,4 +1,4 @@
-package sigmatechnology.se.diff_match_patch;
+package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
 /**
  * Keep a root folder root folder in sync and provides support for ignore a 
  * subset of folders and files inside the root. Meant to be run over network 
@@ -23,11 +23,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import sigmatechnology.se.Util;
-import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch;
-import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Diff;
-import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Operation;
-import sigmatechnology.se.diff_match_patch.fraser_neil.diff_match_patch.Patch;
+import sigmatechnology.se.realtime_file_synchronisation.Util;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Diff;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Operation;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Patch;
 
 public class SynchronizeRoot {
 	public static final Charset ENCODING = Charset.forName("ISO-8859-1");
@@ -70,6 +70,7 @@ public class SynchronizeRoot {
 			    	if(rootMap.containsKey(filePath.toString()) == false){
 			    		// However, make sure it's not on the ignore list.
 			    		Boolean notIgnored = true;
+			    		System.out.println(filePath.toString());
 			    		if(ignore != null){
 				    		for(int i=0;i<ignore.size();i++){
 				    			if(ignore.get(i).equals(filePath) || ignore.get(i).relativize(filePath).toString().equals("")){

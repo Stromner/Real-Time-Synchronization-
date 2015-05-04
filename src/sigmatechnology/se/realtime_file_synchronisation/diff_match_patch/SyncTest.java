@@ -1,4 +1,4 @@
-package diff_match_patch;
+package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
 
 import java.io.File;
 import java.io.IOException;

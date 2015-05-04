@@ -1,4 +1,4 @@
-package network;
+package sigmatechnology.se.realtime_file_synchronisation.network;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;

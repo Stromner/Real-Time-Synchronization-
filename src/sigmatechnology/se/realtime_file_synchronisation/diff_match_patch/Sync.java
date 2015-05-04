@@ -1,4 +1,4 @@
-package diff_match_patch;
+package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
 /**
  * Version one of sync, can keep a single document in sync. The documents can be on 
  * different computers without any problems.
@@ -15,10 +15,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedList;
 
-import diff_match_patch.fraser_neil.diff_match_patch;
-import diff_match_patch.fraser_neil.diff_match_patch.Diff;
-import diff_match_patch.fraser_neil.diff_match_patch.Operation;
-import diff_match_patch.fraser_neil.diff_match_patch.Patch;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Diff;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Operation;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Patch;
 
 public class Sync {
 	public static final Charset ENCODING = Charset.forName("ISO-8859-1");

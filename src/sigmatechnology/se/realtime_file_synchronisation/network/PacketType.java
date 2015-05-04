@@ -1,7 +1,7 @@
-package network;
+package sigmatechnology.se.realtime_file_synchronisation.network;
 
 public enum PacketType {
-	REGISTER, DIFF, CHAT, END, SYNCFILE, ;
+	REGISTER, DIFF, CHAT, END, SYNCFILE;
 	/*
 	final static char REG  = 1;
 	final static char DIFF = 2;

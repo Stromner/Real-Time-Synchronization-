@@ -1,4 +1,4 @@
-package network;
+package sigmatechnology.se.realtime_file_synchronisation.network;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -75,6 +75,8 @@ public class ServerConnectionThread extends Thread {
 	
 	private void register(Packet packet) {
 		//Server2.nickAndSocket.put(packet.nickname, socket);
+		
+		// TODO Check if name exists, if it does, send back "Name exists" and stop/interrupt thread
 		Server.nickAndThread.put(packet.sourceNick, this);
 		System.out.println("SCT: Source: "+packet.sourceNick +	
 		" Dest: " +packet.destinationNick);

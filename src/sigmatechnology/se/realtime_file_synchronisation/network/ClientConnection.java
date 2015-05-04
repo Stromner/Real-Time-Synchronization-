@@ -1,4 +1,4 @@
-package network;
+package sigmatechnology.se.realtime_file_synchronisation.network;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -28,6 +28,7 @@ public class ClientConnection {
 			e.printStackTrace();
 		}
 		
+		
 		this.nickname = nickname;
 		//Start listening/waiting for packets on the socket
 		cr = new ClientReceiver(socket, ois);
@@ -41,7 +42,7 @@ public class ClientConnection {
 	 * Sends packet via socket to the server
 	 * @param packet
 	 */
-	void send(Packet packet){
+	public void send(Packet packet){
 		try{
 			System.out.println("Before flush: Attempt to send from CC");
 			oos.writeObject(packet);

@@ -1,8 +1,8 @@
-package network;
+package sigmatechnology.se.realtime_file_synchronisation.network;
 import java.io.Serializable;
 import java.util.LinkedList;
 
-import diff_match_patch.fraser_neil.diff_match_patch.Diff;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Diff;
 
 
 /**

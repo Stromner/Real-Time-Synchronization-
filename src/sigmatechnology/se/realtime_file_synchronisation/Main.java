@@ -1,12 +1,9 @@
 package sigmatechnology.se.realtime_file_synchronisation;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Scanner;
 
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.SynchronizeRoot;
-import sigmatechnology.se.realtime_file_synchronisation.network.ClientConnection;
-import sigmatechnology.se.realtime_file_synchronisation.network.Packet;
-import sigmatechnology.se.realtime_file_synchronisation.network.PacketType;
+import sigmatechnology.se.realtime_file_synchronisation.network.Client;
 import sigmatechnology.se.realtime_file_synchronisation.network.Server;
 
 
@@ -34,16 +31,8 @@ public class Main {
 		// 	1) To Eclipse
 		// 	2) To other files
 		
-		String data, data2;
-		
-		(new Thread(new Server())).start();
-		Scanner scanInput = new Scanner(System.in);
-		data = scanInput.nextLine();
-		ClientConnection cc3 = new ClientConnection(data);
-		data2 = scanInput.nextLine();
-		ClientConnection cc32 = new ClientConnection(data2);
-		scanInput.close();
-		cc3.send(new Packet(PacketType.CHAT, data, data2, "TestMessage"));
+		Server server = new Server();
+		Client client = new Client();
 		
 		String sRepo1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/",
 			sRepo2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/";

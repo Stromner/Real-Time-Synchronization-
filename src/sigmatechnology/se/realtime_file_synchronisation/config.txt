@@ -1,0 +1,5 @@
+# Client config
+127.0.0.1:20590
+
+# Server config
+20590

@@ -1,146 +1,195 @@
 package sigmatechnology.se.realtime_file_synchronisation.network;
+
+/**
+ * Server that takes care of request from the <code>Client<code> class. Reads
+ * its listening port from the config.txt document.
+ * 
+ * @author Magnus Källtén
+ * @author David Strömner
+ * @version 2015-05-05
+ */
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
-/**
- * Single socket server
- * @author Magnus Källtén
- * http://edn.embarcadero.com/article/31995
- */
-public class Server implements Runnable{
+import sigmatechnology.se.Util;
 
-	int portIn  = 20001;//19999;
-	int portOut = 19999;
-	ServerSocket serverSocket;
-	String timeStamp;
-	static Map<String, Socket> nickAndSocket;
-	static Map<String, ServerConnectionThread> nickAndThread;
-	Iterator<ServerConnectionThread> it;
-	List<ServerConnectionThread> connectionThreads;
+// TODO Implement all the receive methods
+// TODO Implement all the send methods
+// TODO Close client threads elegantly
+// TODO Close listening thread elegantly
+// TODO Look over the safety measures
+
+public class Server{
+	private ServerSocket listenSocket;
+	private Thread listenThread;
+	private Map<String, ClientThread> userMap;
+	private Set<ClientThread> threadSet;
+	private String path = "src/sigmatechnology/se/realtime_file_synchronisation/config.txt";
 	
+	/**
+	 * Start a new server
+	 */
 	public Server(){
-		nickAndSocket = new HashMap<String, Socket>();
-		nickAndThread = new HashMap<String, ServerConnectionThread>();
-		connectionThreads = new ArrayList<ServerConnectionThread>();
+		userMap = new ConcurrentHashMap<String, ClientThread>();
+		threadSet = new CopyOnWriteArraySet<ClientThread>();
+		
+		init();
+		listenThread = new Thread(){
+			public void run(){
+				listen();
+			}
+		};
+		listenThread.start();
 	}
 	
-	public void run(){
-		try{
-			//Check if port available 
-			serverSocket = new ServerSocket(portIn);
-			System.out.println("Server Initialized");
+	/**
+	 * Configure the server by reading the config.txt document to get its port and 
+	 * start its listening thread.
+	 */
+	private void init(){
+		String text = Util.openReadFile(Paths.get(path));
+		String[] textSplitted = text.split("\n");
 		
-			while (true) {
-				Socket socket = serverSocket.accept();
-		        System.out.println("New client");
-		        ServerConnectionThread ct = new ServerConnectionThread(socket);
-		        ct.start();
-		        connectionThreads.add(ct);
-		    }
-	    }
-	    catch (IOException e) {
-	    	e.printStackTrace();
-	    }
+		// The row after the client config text is interesting for us
+		for(int i=0;i<textSplitted.length;i++){
+			if(textSplitted[i].toLowerCase().contains("server".toLowerCase())){
+				String[] s = textSplitted[i+1].split(":");
+				try {
+					listenSocket = new ServerSocket(Integer.parseInt(s[0]));
+				} catch (NumberFormatException | IOException e) {
+					e.printStackTrace();
+				}
+				break;
+			}
+		}
 	}
 	
-	public class ServerConnectionThread extends Thread {
-		Socket socket;
-		ObjectInputStream ois;
-		ObjectOutputStream oos;
-		InetAddress address;
-		ObjectOutputStream outToClient;
-		ObjectInputStream inFromClient;
-		
-		
-		public ServerConnectionThread(Socket socket) {
-			this.socket = socket;
+	/**
+	 * Blocking call that listen for new users. When a new user connects a <code>ClientThread<code> 
+	 * is created for it.
+	 */
+	private void listen(){
+		while(true){
 			try {
-				outToClient = new ObjectOutputStream(socket.getOutputStream());
-				inFromClient = new ObjectInputStream(socket.getInputStream());
+				Socket clientSocket = listenSocket.accept();
+				System.out.println("New Client");
+				// Create a new anonymous thread, will add itself to the map once its user got valid nick.
+				ClientThread thread = new ClientThread(clientSocket);
+				threadSet.add(thread);
+				thread.start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-	        
 		}
-		@Override
-		public void run() {
-			while(true){				
+	}
+	
+	/**
+	 * Thread class that takes care of talking with individual clients. 
+	 * 
+	 * @author Magnus Källtén
+	 * @author David Strömner
+	 * @version 2015-05-05
+	 */
+	private class ClientThread extends Thread{
+		private ObjectOutputStream out;
+		private ObjectInputStream in;
+		private Socket socket;
+		private Thread receiveThread;
+		
+		/**
+		 * Initiate the new thread by creating an I/O stream for it.
+		 * Got its own listening thread for requests from the client.
+		 * @param socket to create the I/O stream from.
+		 */
+		public ClientThread(Socket socket){
+			this.socket = socket;
+			try {
+				out = new ObjectOutputStream(socket.getOutputStream());
+				in = new ObjectInputStream(socket.getInputStream());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			receiveThread = new Thread(){
+				public void run(){
+					receive();
+				}
+			};
+			receiveThread.start();
+		}
+		
+		/**
+		 * Send a message to the user, takes a dotted object array of extra argument.
+		 * @param p type of message.
+		 * @param args additional arguments that needs to be sent with the type.
+		 */
+		public void send(Packets p, Object... args) {
+			List<Object> argsList = new ArrayList<Object>();
+			argsList.add(p);
+			for (Object o : args) {
+				argsList.add(o);
+			}
+			
+			try {
+				out.writeObject(argsList);
+				out.flush();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		/**
+		 * Blocking call that waits for a message from the client to appear.
+		 */
+		private void receive(){
+			while(true){
 				try {
-					LinkedList<?> argsList = (LinkedList<?>)inFromClient.readObject();			
+					List<Object> argsList = (ArrayList<Object>) in.readObject();
+					System.out.print("Message from Client: ");
 					switch((Packets)argsList.get(0)){
-					case REGISTER:
-						System.out.println("Server Register");
-						// TODO register(packet);
-						break;
-					case DIFF:
-						System.out.println("Server Diff");
-						// TODO diff(packet);
-						break;
-					case CHAT:
-						System.out.println("Server Chat");
-						// TODO chat(packet);
-						break;
-					case END:
-						System.out.println("Server End");
-						end();
-						break;
-					case SYNCFILE:
-						System.out.println("Server SyncFile");
-						break;
+						case NEWUSER:
+							System.out.println("NewUser");
+							// TODO Add user to the hashmap, inform all other threads(that is not me!) about the new user
+							break;
+						case DELTEUSER:
+							System.out.println("DeleteUser");
+							// TODO Remove user from the hashmap, inform all other threads(that is not me!) about the deleted user
+							break;
+						case CONNECT:
+							System.out.println("Connect");
+							// TODO Connect a user to another user with all the checks needed for it
+							break;
+						case SYNCFILE:
+							System.out.println("SyncFile");
+							// TODO Send a diff list to another user with all the checks needed for it
+							break;
+						case CHAT:
+							System.out.println("Chat");
+							// TODO Forward the chat message to the user we're connected to with all the checks needed for it
+							break;
+						case ERROR:
+							System.out.println("Error");
+							// TODO Expand? Might be errors that needed to be handled in different ways.
+							break;
+						default:
+							break;
+						
 					}
 				} catch (ClassNotFoundException | IOException e) {
 					e.printStackTrace();
 				}
 			}
 		}
-		
-		private void end() {
-		}
-		
-		/*
-		private void diff(Packet packet2) {
-			// TODO Auto-generated method stub
-			
-		}
-		private void chat(Packet packet) {
-			System.out.println("Msg: "+packet.chatMsg + 
-			" from: "+packet.sourceNick+" to: "+packet.destinationNick);
-			forward(packet);
-		}
-		
-		private void register(Packet packet) {
-			//Server2.nickAndSocket.put(packet.nickname, socket);
-			
-			// TODO Check if name exists, if it does, send back "Name exists" and stop/interrupt thread
-			Server.nickAndThread.put(packet.sourceNick, this);
-			System.out.println("SCT: Source: "+packet.sourceNick +	
-			" Dest: " +packet.destinationNick);
-		}
-		*/
-		/*
-		private void forward(Packet packet) {
-			try{
-				//Different socket with new address?
-				
-				//Get the connection thread of the destination connection
-				ServerConnectionThread sct = Server.nickAndThread.get(packet.destinationNick);
-				//Use that threads ObjectOutputStream to send via its socket 
-				sct.outToClient.writeObject(packet);
-				sct.outToClient.flush();
-			}
-			catch(IOException e){
-				System.out.println(e);
-			}
-		}*/
 	}
-}	
+}

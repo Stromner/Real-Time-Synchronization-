@@ -26,10 +26,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import junit.framework.TestCase;
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Diff;
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.LinesToCharsResult;
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Patch;
-import junit.framework.TestCase;
+
+
 
 public class diff_match_patch_test extends TestCase {
 

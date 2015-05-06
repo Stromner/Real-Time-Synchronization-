@@ -20,8 +20,8 @@
 package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;

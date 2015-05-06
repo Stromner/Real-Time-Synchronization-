@@ -17,7 +17,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import sigmatechnology.se.Util;
+import sigmatechnology.se.realtime_file_synchronisation.Util;
 
 
 // TODO Implement all the receive methods
@@ -81,10 +81,11 @@ public class Client {
 			if(textSplitted[i].toLowerCase().contains("Client".toLowerCase())){
 				String[] s = textSplitted[i+1].split(":");
 				try {
+					// Create a new socket with its I/O
 					socket = new Socket(s[0], Integer.parseInt(s[1]));
 					out = new ObjectOutputStream(socket.getOutputStream());
 					in = new ObjectInputStream(socket.getInputStream());
-					
+					// Listen is blocking so runs in own thread
 					receiveThread = new Thread(){
 						public void run(){
 							receive();
@@ -128,7 +129,6 @@ public class Client {
 						break;
 					default:
 						break;
-					
 				}
 			} catch (ClassNotFoundException | IOException e) {
 				e.printStackTrace();

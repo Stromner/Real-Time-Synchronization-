@@ -1,4 +1,4 @@
-package sigmatechnology.se.diff_match_patch;
+package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 
-import sigmatechnology.se.Util;
+import sigmatechnology.se.realtime_file_synchronisation.Util;
 
 public class SynchronizeRootTest extends TestCase{
 	private String sRepo1 = "src/sigmatechnology/se/diff_match_patch/TestRepo1/",

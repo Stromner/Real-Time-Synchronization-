@@ -22,12 +22,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import sigmatechnology.se.Util;
+import sigmatechnology.se.realtime_file_synchronisation.Util;
 
 // TODO Implement all the receive methods
 // TODO Implement all the send methods
-// TODO Close client threads elegantly
-// TODO Close listening thread elegantly
 // TODO Look over the safety measures
 
 public class Server{
@@ -45,6 +43,7 @@ public class Server{
 		threadSet = new CopyOnWriteArraySet<ClientThread>();
 		
 		init();
+		// Listen is blocking so needs to run in own thread
 		listenThread = new Thread(){
 			public void run(){
 				listen();
@@ -61,7 +60,7 @@ public class Server{
 		String text = Util.openReadFile(Paths.get(path));
 		String[] textSplitted = text.split("\n");
 		
-		// The row after the client config text is interesting for us
+		// The row after the server config text is interesting for us
 		for(int i=0;i<textSplitted.length;i++){
 			if(textSplitted[i].toLowerCase().contains("server".toLowerCase())){
 				String[] s = textSplitted[i+1].split(":");
@@ -119,8 +118,11 @@ public class Server{
 				in = new ObjectInputStream(socket.getInputStream());
 			} catch (IOException e) {
 				e.printStackTrace();
+				Thread.currentThread().interrupt();
+				disconnect();
 			}
 			
+			// Receive is blocking so needs to run in its own thread.
 			receiveThread = new Thread(){
 				public void run(){
 					receive();
@@ -146,6 +148,7 @@ public class Server{
 				out.flush();
 			} catch (Exception e) {
 				e.printStackTrace();
+				disconnect();
 			}
 		}
 		
@@ -188,7 +191,35 @@ public class Server{
 					}
 				} catch (ClassNotFoundException | IOException e) {
 					e.printStackTrace();
+					Thread.currentThread().interrupt();
+					disconnect();
 				}
+			}
+		}
+		
+		/**
+		 * Kill the threads serving a client elegantly.
+		 */
+		private void disconnect(){
+			try {
+				out.close();
+				in.close();
+				socket.close();
+				Thread.currentThread().interrupt();
+				// Remove us from the set and map(If we're in them)
+				for (Map.Entry<String, ClientThread> entry : userMap.entrySet()){
+					if(entry.getValue().getId() == getId()){
+						userMap.remove(entry.getKey(), entry.getValue());
+					}
+				}
+				
+				for (ClientThread t : threadSet) {
+					if(t.getId() == getId()){
+						threadSet.remove(t);
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 	}

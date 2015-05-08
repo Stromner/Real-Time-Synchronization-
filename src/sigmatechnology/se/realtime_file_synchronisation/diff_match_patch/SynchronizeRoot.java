@@ -11,7 +11,7 @@ package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
  * created.
  * 
  * @author David Strömner
- * @date 2015-04-27
+ * @date 2015-05-08
  */
 
 import java.nio.charset.Charset;
@@ -40,13 +40,13 @@ public class SynchronizeRoot {
 	 * Initialize the synchronization object by searching through the provided root folder.
 	 * Each file inside the root folder and not on the ignore list will be synchronized.
 	 * 
-	 * @param doc Root to synchronize.
-	 * @param ignoreDocs Files and folders inside the root to ignore. Null if everything
+	 * @param doc root to synchronize.
+	 * @param ignoreDocs files and folders inside the root to ignore. Null if everything
 	 * should be included.
 	 */
 	public SynchronizeRoot(Path doc, List<Path> ignoreDocs){
 		if(doc == null){
-			throw new IllegalArgumentException("Must have a valid root");
+			throw new IllegalArgumentException("Root must be valid, can't be null.");
 		}
 		
 		root = doc;
@@ -70,7 +70,6 @@ public class SynchronizeRoot {
 			    	if(rootMap.containsKey(filePath.toString()) == false){
 			    		// However, make sure it's not on the ignore list.
 			    		Boolean notIgnored = true;
-			    		System.out.println(filePath.toString());
 			    		if(ignore != null){
 				    		for(int i=0;i<ignore.size();i++){
 				    			if(ignore.get(i).equals(filePath) || ignore.get(i).relativize(filePath).toString().equals("")){
@@ -109,9 +108,9 @@ public class SynchronizeRoot {
 	
 	/**
 	 * Calculate a diff for each of the synchronized files. If no changes have been made 
-	 * since last call its still included in the list as a simple element saying everything is equal.
+	 * since last call it's still included in the list as a simple element saying everything is equal.
 	 * 
-	 * @return All the diffs for the different documents.
+	 * @return all the diffs for the different documents.
 	 */
 	public LinkedList<SynchronizeDocument> getDiffs(){
 		LinkedList<SynchronizeDocument> l = new LinkedList<SynchronizeDocument>();
@@ -143,8 +142,8 @@ public class SynchronizeRoot {
 	 * Calculates a diff between the old version of a document and the current version of 
 	 * the document. If a modifications is spotted it will reflect so in the return.
 	 * 
-	 * @param doc Document to check if changed.
-	 * @return A list containing the calculate diff between the old document 
+	 * @param doc document to check if changed.
+	 * @return a list containing the calculate diff between the old document 
 	 * and the current one. null if the document could not be open/found.
 	 */
 	private LinkedList<Diff> getDiff(Path doc){
@@ -152,9 +151,12 @@ public class SynchronizeRoot {
 		if((file = rootMap.get(doc.toString())) == null){
 			return null;
 		}
-		String modifiedString = "";
 		
-		modifiedString = Util.openReadFile(root.resolve(doc));
+		// Is the file opened in Eclipse? If so read the data from there
+		String eclipseString = Util.getEclipseOpenFileContent(root.resolve(doc).toString());
+		String modifiedString;
+		modifiedString = eclipseString != null ? eclipseString : Util.openReadFile(root.resolve(doc));
+		
 		LinkedList<Diff> list = dmp.diff_main(file.getData(),modifiedString, true);
 		file.setData(modifiedString);
 		return list;
@@ -165,23 +167,31 @@ public class SynchronizeRoot {
 	 * apply the diff in the correct places. Ignores diffs that are empty and 
 	 * diffs that are null.
 	 * 
-	 * @param diffList List containing the diffs that should be applied.
-	 * @param doc File to apply the diffs to.
+	 * @param diffList list containing the diffs that should be applied.
+	 * @param doc file to apply the diffs to.
 	 */
 	private void applyDiff(LinkedList<Diff> diffList, Path doc){
 		// If we can't fetch the first element then the document is empty, nothing to do.
 		// If there is only one element and that element is equal then no modifications have
 		// been made.
-		if(diffList == null || 
-				(diffList.size() == 0) || 
+		if(diffList == null || (diffList.size() == 0) || 
 				(diffList.get(0).operation == Operation.EQUAL && diffList.size() == 1)){
 			return;
 		}
 		
 		LinkedList<Patch> patchList = dmp.patch_make(diffList);
 		Object o[] = null;
-		o = dmp.patch_apply(patchList, Util.openReadFile(doc));
-		String s = (String)o[0];
-		Util.openWriteFile(doc, s);
+		// Is the file opened in Eclipse? If so patch the file through the IDE
+		String eclipseString = Util.getEclipseOpenFileContent(root.resolve(doc).toString());
+		if(eclipseString != null){
+			o = dmp.patch_apply(patchList, eclipseString);
+			String s = (String)o[0];
+			Util.openEclipseWriteContent(doc.toString(), s);
+		}
+		else{
+			o = dmp.patch_apply(patchList, Util.openReadFile(doc));
+			String s = (String)o[0];
+			Util.openWriteFile(doc, s);
+		}
 	}
 }

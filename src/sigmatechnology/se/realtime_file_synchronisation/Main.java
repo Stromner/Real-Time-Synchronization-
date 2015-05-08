@@ -3,8 +3,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.SynchronizeRoot;
-import sigmatechnology.se.realtime_file_synchronisation.network.Client;
-import sigmatechnology.se.realtime_file_synchronisation.network.Server;
 
 
 public class Main {	
@@ -31,8 +29,8 @@ public class Main {
 		// 	1) To Eclipse
 		// 	2) To other files
 		
-		Server server = new Server();
-		Client client = new Client();
+		//Server server = new Server();
+		//Client client = new Client();
 		
 		String sRepo1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/",
 			sRepo2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/";

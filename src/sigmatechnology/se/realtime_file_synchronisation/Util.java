@@ -15,6 +15,8 @@ import java.nio.file.Path;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextSelection;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -106,7 +108,18 @@ public class Util {
 			Display.getDefault().syncExec(new Runnable() {
 				@Override
 				public void run() {
+					// Get cursor location
+					ISelection selection = ((ITextEditor)p).getSelectionProvider().getSelection();
+					int offset = 0;
+					if(selection instanceof ITextSelection){
+						ITextSelection textSelection = (ITextSelection)selection;
+						offset = textSelection.getOffset();
+					}
+					
 					document.set(data);
+					
+					// Set cursor location back to where it was
+					((ITextEditor)p).selectAndReveal(offset, 0);
 				}
 			});
 		}

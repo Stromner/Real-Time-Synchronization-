@@ -46,7 +46,11 @@ public class SampleAction implements IWorkbenchWindowActionDelegate {
 				Scanner s = new Scanner(System.in);
 				System.out.println("Press any button + 'enter' to sync");
 				while(true){
-					s.nextLine();
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 					System.out.println("New diff cycle:");
 					sync2.applyDiffs(sync1.getDiffs());
 				}

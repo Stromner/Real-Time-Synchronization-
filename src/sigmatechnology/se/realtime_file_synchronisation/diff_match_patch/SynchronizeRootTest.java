@@ -10,13 +10,19 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.junit.Before;
 import org.junit.Test;
 
 import sigmatechnology.se.realtime_file_synchronisation.Util;
 
 public class SynchronizeRootTest extends TestCase{
-	private String sRepo1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/",
+	private final String sRepo1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/",
 				sRepo2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/",
 				sIgnoreFolder1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/Ignore",
 				sIgnoreFolder2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/Ignore",
@@ -58,7 +64,7 @@ public class SynchronizeRootTest extends TestCase{
 	}
 	
 	//
-	// Single File Tests
+	// Single File Tests without Eclipse
 	//
 	@Test
 	public void testEmptyToOneChar(){
@@ -154,6 +160,25 @@ public class SynchronizeRootTest extends TestCase{
 		Util.openWriteFile(docSend1, "I cut hair for a living.");
 		syncRepo2.applyDiffs(syncRepo1.getDiffs());
 		assertEquals(true, Util.openReadFile(docSend2).equals("I cut hair for a living."));
+	}
+	
+	//
+	// Single File Tests with Eclipse
+	//
+	
+	@Test
+	public void testDocumentSync() throws PartInitException{
+		// Open an existing file in the editor
+		//IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+		//org.eclipse.core.runtime.Path path = new org.eclipse.core.runtime.Path("C:/Users/David/Desktop/Test/src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/"+sSend1); // Conflicting import, must use full package name
+		//IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(path);
+		//IDE.openEditor(page, file, true);
+		fail();
+	}
+	
+	@Test
+	public void testCursorPosition(){
+		fail();
 	}
 	
 	//

@@ -7,28 +7,6 @@ import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.Synchro
 
 public class Main {	
 	public static void main(String[] args) throws InterruptedException {		
-		// Create client
-		//	Connect to the server
-		//	Fetch user list
-		//	Display user list
-		// Wait for our user to select a user and press connect
-		// Create connection with other user
-		// Create SynchronizeRoot
-		// Loop
-		// 	Get diffs
-		// 	1) From Eclipse
-		// 	2) From other files
-		// Send diffs
-		// End Loop
-		
-		// Client receive thread
-		// Wait for package
-		// Handle package
-		// 	If package of patch type
-		//	Patch diffs
-		// 	1) To Eclipse
-		// 	2) To other files
-		
 		//Server server = new Server();
 		//Client client = new Client();
 		
@@ -41,7 +19,7 @@ public class Main {
 		SynchronizeRoot sync2 = new SynchronizeRoot(repo2, null);
 		
 		while(true){
-			Thread.sleep(1000);
+			Thread.sleep(500);
 			System.out.println("New diff cycle:");
 			sync2.applyDiffs(sync1.getDiffs());
 		}

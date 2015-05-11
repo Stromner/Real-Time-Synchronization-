@@ -32,7 +32,6 @@ import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Patch;
 
 
-
 public class diff_match_patch_test extends TestCase {
 
   private diff_match_patch dmp;

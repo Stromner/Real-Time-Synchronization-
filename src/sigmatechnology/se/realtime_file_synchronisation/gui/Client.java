@@ -223,7 +223,6 @@ public class Client extends JFrame implements ActionListener{
 		}
 		else if(source == serverConn) {
 			//TODO Kolla om man redan är uppkopplad?
-			System.out.println("balle1");
 			ServerConnDialog scd = new ServerConnDialog(new JFrame(), "Server Connection", this);
 			scd.pack();
 			scd.setVisible(true);

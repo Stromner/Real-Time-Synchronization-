@@ -138,15 +138,13 @@ public class ServerConnDialog extends JDialog implements ActionListener{
 	@Override
 	public void actionPerformed(ActionEvent event) {
 		// TODO Call the controller from here?
-		/*
 		if(event.getSource() == connectButton){
 			if(nickTF.getText().equals("") || serverIpTF.getText().equals("") || serverPortTF.getText().equals("")){
 				JOptionPane.showMessageDialog(null, "One or more of the inputs are empty.");
 				return;
 			}
 			else{
-				//client.setServerInformation(serverIpTF.getText(), serverPortTF.getText(), nickTF.getText());
-				System.out.println("here1");
+				client.setServerInformation(serverIpTF.getText(), serverPortTF.getText(), nickTF.getText());
 				//TODO Controller.connectToServer(serverIpTF.getText(), serverPortTF.getText());
 				//If the IP or port has changed the new values will be written to the config.txt
 				if(serverIpTF.getText().compareTo(ipAndPort[0]) != 0 || serverPortTF.getText().compareTo(ipAndPort[1]) != 0){
@@ -154,11 +152,7 @@ public class ServerConnDialog extends JDialog implements ActionListener{
 				}
 			}
 		}
-		System.out.println("here2");
-		*/
 		dispose();
-		System.out.println("here3");
-		
 	}
 	
 	/**

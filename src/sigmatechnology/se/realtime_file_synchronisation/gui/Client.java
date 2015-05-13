@@ -215,7 +215,7 @@ public class Client extends JFrame implements ActionListener{
 				return;
 			}
 			else{
-				writeInPane(chatReadPane, chatWritePane.getText());
+				addToChat(chatWritePane.getText(), "Me");
 				//TODO set to "" when done testing.
 				chatWritePane.setText("Test text");
 			}

@@ -15,9 +15,12 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import sigmatechnology.se.realtime_file_synchronisation.Util;
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.SynchronizeDocument;
+import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
 
 
 // TODO Implement all the receive methods
@@ -29,6 +32,7 @@ public class Client {
 	private ObjectInputStream in;
 	private Thread receiveThread;
 	private String path = "src/sigmatechnology/se/realtime_file_synchronisation/config.txt";
+	private List<Object> lastPackage;
 	
 	/**
 	 * Initiate a new client.
@@ -43,7 +47,7 @@ public class Client {
 	 * @param user nickname to the client we're trying to connect to.
 	 */
 	public void connectToUser(String me, String user){
-		send(Packets.CONNECT, me, user);
+		send(Packets.CONNECTUSER, me, user);
 	}
 	
 	/**
@@ -51,20 +55,32 @@ public class Client {
 	 * @param p type of message.
 	 * @param args additional arguments that needs to be sent with the type.
 	 */
-	public void send(Packets p, Object... args) {
-		List<Object> argsList = new ArrayList<Object>();
-		argsList.add(p);
-		for (Object o : args) {
-			argsList.add(o);
+	public Boolean send(Packets p, Object... args) {
+		if(!socket.isClosed()){
+			List<Object> argsList = new ArrayList<Object>();
+			argsList.add(p);
+			for (Object o : args) {
+				argsList.add(o);
+			}
+			
+			try {
+				out.writeObject(argsList);
+				out.flush();
+			} catch (Exception e) {
+				disconnect();
+			}
+			
+			return true;
 		}
 		
-		try {
-			out.writeObject(argsList);
-			out.flush();
-		} catch (Exception e) {
-			e.printStackTrace();
-			disconnect();
-		}
+		return false;
+	}
+	
+	/**
+	 * @return last package that the server received in. Meant for testing only.
+	 */
+	public List<Object> getLastPackage(){
+		return lastPackage;
 	}
 	
 	/**
@@ -85,6 +101,7 @@ public class Client {
 					socket = new Socket(s[0], Integer.parseInt(s[1]));
 					out = new ObjectOutputStream(socket.getOutputStream());
 					in = new ObjectInputStream(socket.getInputStream());
+					
 					// Listen is blocking so runs in own thread
 					receiveThread = new Thread(){
 						public void run(){
@@ -93,7 +110,6 @@ public class Client {
 					};
 					receiveThread.start();
 				} catch (NumberFormatException | IOException e) {
-					e.printStackTrace();
 					disconnect();
 				}
 				break;
@@ -105,34 +121,51 @@ public class Client {
 	 * Blocking call that waits for a message from the client to appear.
 	 */
 	private void receive(){
-		while(true){
+		while(!receiveThread.isInterrupted()){
 			try {
 				List<Object> argsList = (ArrayList<Object>) in.readObject();
+				
+				// Testing purpose
+				lastPackage = argsList;
+						
 				switch((Packets)argsList.get(0)){
 					case NEWUSER:
-						System.out.println("NewUser");
+						System.out.println("Client: Connect");
+						Controller.getInstance().updateUserList(Packets.NEWUSER, (String)argsList.get(1));
 						break;
-					case DELTEUSER:
-						System.out.println("DeleteUser");
+					case DELETEUSER:
+						System.out.println("Client: Disconnect");
+						Controller.getInstance().updateUserList(Packets.DELETEUSER, (String)argsList.get(1));
 						break;
-					case CONNECT:
-						System.out.println("Connect");
+					case CONNECTUSER:
+						System.out.println("Client: Connect to user");
+						Controller.getInstance().userConnected((String)argsList.get(1), true);
+						break;
+					case DISCONNECTUSER:
+						System.out.println("Client: Disconnect from user");
+						Controller.getInstance().userConnected((String)argsList.get(1), false);
 						break;
 					case SYNCFILE:
-						System.out.println("SyncFile");
+						System.out.println("Client: SyncFile");
+						Controller.getInstance().getRoot().applyDiffs((LinkedList<SynchronizeDocument>) argsList.get(1));
 						break;
 					case CHAT:
-						System.out.println("Chat");
+						System.out.println("Client: Chat");
+						Controller.getInstance().msgToGUI((String)argsList.get(1), (String)argsList.get(2));
 						break;
 					case ERROR:
-						System.out.println("Error");
+						System.out.println("Client: Error: " + argsList.get(1));
+						break;
+					case OK:
+						System.out.println("Client: Ok");
+						break;
+					case DISCONNECTSERVER:
+						disconnect();
 						break;
 					default:
 						break;
 				}
 			} catch (ClassNotFoundException | IOException e) {
-				e.printStackTrace();
-				Thread.currentThread().interrupt();
 				disconnect();
 			}
 		}
@@ -141,10 +174,9 @@ public class Client {
 	/**
 	 * Close down the socket and its streams.
 	 */
-	private void disconnect(){
+	public void disconnect(){
 		try {
-			out.close();
-			in.close();
+			receiveThread.interrupt();
 			socket.close();
 		} catch (IOException e) {
 			e.printStackTrace();

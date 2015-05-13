@@ -10,12 +10,7 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.ide.IDE;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,6 +48,7 @@ public class SynchronizeRootTest extends TestCase{
 			docSend2 = prepareFile(sSend2);
 			syncRepo1 = new SynchronizeRoot(repo1, null);
 			syncRepo2 = new SynchronizeRoot(repo2, null);
+			oneTimeSetUpDone = true;
 		}
 		
 		syncRepo1.update();

@@ -27,5 +27,4 @@ public class Main {
 		//client.pack();
 		client.setVisible(true);
 	}
-
 }

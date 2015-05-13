@@ -38,12 +38,13 @@ public class Client extends JFrame implements ActionListener{
 	/**
 	 * 
 	 */
+	
 	private static final long serialVersionUID = 1L;
 	JPanel leftPanel, rightPanel;
-	JButton sendChatButton;
+	JButton chatButton;
 	JLabel label;
 	JTextField directoryText;
-	JTextPane updateText, chatReadPane, chatWritePane;
+	JTextPane updatePane, chatReadPane, chatWritePane;
 	JFileChooser fc;
 	GridBagConstraints gbc;
 	JScrollPane scrollPaneUpdate, scrollPaneChat;
@@ -51,8 +52,8 @@ public class Client extends JFrame implements ActionListener{
 	JSplitPane splitPane;
 	
 	JMenuBar menuBar;
-	JMenu connMenu, helpMenu;
-	JMenuItem connServer, discServer, connUser, discUser;
+	JMenu menuConn, helpMenu;
+	JMenuItem serverConn, serverDisc, userConn, userDisc;
 	JCheckBoxMenuItem cbMenuItem;
 	
 	String serverIP, serverPort, nickname;
@@ -81,10 +82,10 @@ public class Client extends JFrame implements ActionListener{
 		menuBar = new JMenuBar();
 
 		//Build the first menu.
-		connMenu = new JMenu("Connections");
-		connMenu.setMnemonic(KeyEvent.VK_A);
+		menuConn = new JMenu("Connections");
+		menuConn.setMnemonic(KeyEvent.VK_A);
 		//connMenu.getAccessibleContext().setAccessibleDescription("The only menu in this program that has menu items");
-		menuBar.add(connMenu);
+		menuBar.add(menuConn);
 		
 		helpMenu = new JMenu("Help");
 		helpMenu.setMnemonic(KeyEvent.VK_B);
@@ -92,42 +93,44 @@ public class Client extends JFrame implements ActionListener{
 		menuBar.add(helpMenu);
 
 		//a group of JMenuItems
-		connServer = new JMenuItem("Connect to server");
-		connServer.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1, ActionEvent.ALT_MASK));
-		connServer.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
-		connServer.addActionListener(this);
-		connMenu.add(connServer);
+		serverConn = new JMenuItem("Connect to server");
+		serverConn.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1, ActionEvent.ALT_MASK));
+		serverConn.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
+		serverConn.addActionListener(this);
+		menuConn.add(serverConn);
 		
-		connUser = new JMenuItem("Connect to user");
-		connUser.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_2, ActionEvent.ALT_MASK));
-		connUser.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
-		connUser.addActionListener(this);
-		connMenu.add(connUser);
+		userConn = new JMenuItem("Connect to user");
+		userConn.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_2, ActionEvent.ALT_MASK));
+		userConn.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
+		userConn.addActionListener(this);
+		menuConn.add(userConn);
 		
-		discServer = new JMenuItem("Disconnect from server");
-		discServer.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_3, ActionEvent.ALT_MASK));
-		discServer.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
-		connMenu.add(discServer);
+		serverDisc = new JMenuItem("Disconnect from server");
+		serverDisc.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_3, ActionEvent.ALT_MASK));
+		serverDisc.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
+		serverDisc.addActionListener(this);
+		menuConn.add(serverDisc);
 		
-		discUser = new JMenuItem("Disconnect from user");
-		discUser.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_4, ActionEvent.ALT_MASK));
-		discUser.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
-		connMenu.add(discUser);
+		userDisc = new JMenuItem("Disconnect from user");
+		userDisc.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_4, ActionEvent.ALT_MASK));
+		userDisc.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
+		userDisc.addActionListener(this);
+		menuConn.add(userDisc);
 
-		connMenu.addSeparator();
+		menuConn.addSeparator();
 		cbMenuItem = new JCheckBoxMenuItem("Toggle updates (In construction)");
 		cbMenuItem.setMnemonic(KeyEvent.VK_C);
-		connMenu.add(cbMenuItem);
+		menuConn.add(cbMenuItem);
 
 		setJMenuBar(menuBar);
 		
-		updateText = new JTextPane();
-		updateText.setText("Updates text");
-		updateText.setEditable(false);
-		updateText.setBorder(new TitledBorder("Updates"));
+		updatePane = new JTextPane();
+		updatePane.setText("Updates text");
+		updatePane.setEditable(false);
+		updatePane.setBorder(new TitledBorder("Updates"));
 		
 		
-		scrollPaneUpdate = new JScrollPane(updateText);
+		scrollPaneUpdate = new JScrollPane(updatePane);
 		scrollPaneUpdate.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		vertical = scrollPaneUpdate.getVerticalScrollBar();
 		vertical.setValue(vertical.getMaximum());
@@ -166,19 +169,18 @@ public class Client extends JFrame implements ActionListener{
 		scrollPaneChat.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		rightPanel.add(scrollPaneChat, gbc);
 		
-		sendChatButton = new JButton();
-		sendChatButton.setText("Send");
-		sendChatButton.addActionListener(this);
-		sendChatButton.setPreferredSize(new Dimension(72, 0));
+		chatButton = new JButton();
+		chatButton.setText("Send");
+		//TODO chat button when fixed
+		//chatButton.setEnabled(false);
+		chatButton.addActionListener(this);
+		chatButton.setPreferredSize(new Dimension(72, 0));
 		gbc.fill = GridBagConstraints.BOTH;
 		gbc.weightx = 0;
 		gbc.weighty = 0;
 		gbc.gridx = 1;
 		gbc.gridy = 1;
-		rightPanel.add(sendChatButton, gbc);
-		
-		
-		//panel.add(scrollPaneChat, gbc);
+		rightPanel.add(chatButton, gbc);
 		
 		//Add to split last
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scrollPaneUpdate, rightPanel);
@@ -186,24 +188,21 @@ public class Client extends JFrame implements ActionListener{
 		splitPane.setDividerLocation(250);
 		
 		this.add(splitPane);
-		
-	}
-	
-	//Unnecessary at the moment
-	private void updateUpdateText(String text) {
-		writeInPane(updateText, text);
 	}
 
 	/**
 	 * Writes text at the bottom of textPane
 	 * @param textPane
-	 * @param text
+	 * @param msg
 	 */
-	private void writeInPane(JTextPane textPane, String text){
-		StyledDocument doc = textPane.getStyledDocument();
+	private void writeInPane(JTextPane textPane, String msg){
+		if(textPane == updatePane){
+			//TODO change msg, add time stamp or whatever
+		}
 		
+		StyledDocument doc = textPane.getStyledDocument();
 		try {
-			doc.insertString(doc.getLength(), text, null);
+			doc.insertString(doc.getLength(), msg, null);
 		} catch (BadLocationException e) {
 			e.printStackTrace();
 		}
@@ -211,66 +210,108 @@ public class Client extends JFrame implements ActionListener{
 	
 	public void actionPerformed(ActionEvent event){
 		Object source = event.getSource();
-		if(source == sendChatButton){
-			System.out.println("Pressed send chat button");
-			Date date = new Date();
-			SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy H:mm:ss");
-			String formattedDate = sdf.format(date);
-			
-			if((chatWritePane.getText() == null) || (chatWritePane.getText().equals(""))){
+		if(source == chatButton){
+			if(chatWritePane.getText().equals("") || chatWritePane.getText() == null){
 				return;
 			}
 			else{
-				writeInPane(chatReadPane, "\n------------------------------\n" 
-						+ formattedDate + "\n" 
-						+ chatWritePane.getText());
-				chatWritePane.setText("");
+				writeInPane(chatReadPane, chatWritePane.getText());
+				//TODO set to "" when done testing.
+				chatWritePane.setText("Test text");
 			}
 			
 		}
-		else if(source == connServer) {
-			//Låsa fönster?
-			//Kolla om man redan är uppkopplad?
-			
+		else if(source == serverConn) {
+			//TODO Kolla om man redan är uppkopplad?
+			System.out.println("balle1");
 			ServerConnDialog scd = new ServerConnDialog(new JFrame(), "Server Connection", this);
 			scd.pack();
 			scd.setVisible(true);
         }
-		else if(source == connUser){
-			UserConnDialog ucd = new UserConnDialog(new JFrame(), "title - ucd", this);
+		else if(source == userConn){
+			UserConnDialog ucd = new UserConnDialog(new JFrame(), "User Connection", this);
 			ucd.pack();
 			ucd.setVisible(true);
 		}
-			
+		else if(source == serverDisc){
+			//TODO
+		}
+		else if(source == userDisc){
+			//TODO
+		}
 	}
 	
-	public void setServerIP(String serverIP){
+	/**
+	 * Sends the msg to chat with time stamp
+	 * @param msg
+	 */
+	public void addToChat(String msg, String from){
+		Date date = new Date();
+		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy H:mm:ss");
+		String formattedDate = sdf.format(date);
+		
+		//TODO Add from who
+		msg = "\n------------------------------\n" 
+				+ formattedDate + "\n" 
+				+ msg;
+		writeInPane(chatReadPane, msg);
+	}
+	
+	public void setServerInformation(String serverIP, String serverPort, String nickname){
 		this.serverIP = serverIP;
-		updateText.setText(serverIP);
-		//Add string to file?
-	}
-	public void setServerPort(String serverPort){
 		this.serverPort = serverPort;
-	}
-	public void setNickname(String nickname){
 		this.nickname = nickname;
 	}
 	
-	public String [] getServerNickList(){
-		return new String[]{"Nick9","Nick2","Nick3","Nick4"};
+	public void diffRecieved(){
+		//TODO Something to put in the updatePane
+		String update = "";
+		writeInPane(updatePane, update);
 	}
 	
-	/*
-	public void readFromFile(String path){
-		String text = Util.openReadFile(Paths.get(path));
-		String[] textSplitted = text.split("\n");
-				
-		// The row after the client config text is interesting for us
-		for(int i=0;i<textSplitted.length;i++){
-			if(textSplitted[i].toLowerCase().contains("Client".toLowerCase())){
-				String[] s = textSplitted[i+1].split(":");
-			}
-		}
+	public void diffSent(){
+		//TODO Something to put in the updatePane
+		String update = "";
+		writeInPane(updatePane, update);
 	}
-	*/
+	
+	public void serverConnected(){
+		//TODO server conn msg
+		serverConn.setEnabled(false);
+		serverDisc.setEnabled(true);
+		userConn.setEnabled(true);
+		String msg = "";
+		writeInPane(updatePane, msg);
+	}
+	
+	public void serverDisconnected(){
+		//TODO server disc msg
+		serverDisc.setEnabled(false);
+		String msg = "";
+		writeInPane(updatePane, msg);
+	}
+	
+	public void userConnected(){
+		//TODO user conn msg
+		chatButton.setEnabled(true);
+		userConn.setEnabled(false);
+		userDisc.setEnabled(true);
+		String msg = "";
+		writeInPane(updatePane, msg);
+	}
+	
+	public void userDisconnected(){
+		//TODO user disc msg
+		chatButton.setEnabled(false);
+		userConn.setEnabled(true);
+		userDisc.setEnabled(false);
+		String msg = "";
+		writeInPane(updatePane, msg);
+	}
+	
+	public String [] getServerNickList(){
+		//TODO Use nicknames from server
+		return new String[]{"Nick9","Nick2","Nick3","Nick4"};
+	}
+
 }

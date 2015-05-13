@@ -12,9 +12,11 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 
 
@@ -24,8 +26,8 @@ public class UserConnDialog extends JDialog implements ActionListener{
 	 * 
 	 */
 	
-	JLabel nickLabel, fileDirectoryLabel, serverPortLabel;
-	JTextField nickTF, fileDirectoryField, serverPortTF;
+	JLabel label;
+	JTextField nickTF, fileDirectoryTF, serverPortTF;
 	JPanel panel;
 	JButton doneButton, fileDirectoryButton;
 	GridBagConstraints gbc;
@@ -47,18 +49,19 @@ public class UserConnDialog extends JDialog implements ActionListener{
 		
 		
 		//Nickname list from server to choose from
-		nickLabel = new JLabel();
-		nickLabel.setText("Nickname");
+		label = new JLabel();
+		label.setText("Nickname");
 		gbc.weightx = 1;
 		gbc.weighty = 1;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.gridx = 0;
 		gbc.gridy = 0;
 		gbc.insets = new Insets(20, 20, 0, 20);
-		panel.add(nickLabel, gbc);
+		panel.add(label, gbc);
 		
 		model = new DefaultListModel<String>();
 		nickList = new JList<String>(model);
+	    nickList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 	    String testList[] = client.getServerNickList();
 	    updateNickList(testList);
 	    gbc.gridy = 1;
@@ -72,19 +75,20 @@ public class UserConnDialog extends JDialog implements ActionListener{
 		
 		
 		//Choose file of directory label and button
-		fileDirectoryLabel = new JLabel();
-		fileDirectoryLabel.setText("Choose file/directory");
+		label = new JLabel();
+		label.setText("Choose file/directory");
 		gbc.gridy = 2;
 		gbc.gridwidth = 1;
 		gbc.insets = new Insets(20, 20, 0, 20);
-		panel.add(fileDirectoryLabel, gbc);
+		panel.add(label, gbc);
 		
-		fileDirectoryField = new JTextField();
+		fileDirectoryTF = new JTextField();
+		fileDirectoryTF.setEditable(false);
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.gridy = 3;
 		//gbc.gridwidth = 2;
 		gbc.insets = new Insets(0, 20, 0, 0);
-		panel.add(fileDirectoryField, gbc);
+		panel.add(fileDirectoryTF, gbc);
 		
 		fileDirectoryButton = new JButton();
 		fileDirectoryButton.setText("Select");
@@ -125,8 +129,16 @@ public class UserConnDialog extends JDialog implements ActionListener{
 	public void actionPerformed(ActionEvent event) {
 		JButton action = (JButton)event.getSource();
 		if(action == doneButton){
-			System.out.println("pressed done button");
-			updateNickList(new String[] {"fisk", "båt"});
+			if(fileDirectoryTF.getText().equals("") || nickList.isSelectionEmpty()){
+				JOptionPane.showMessageDialog(null, "The information required has not been chosen");
+				return;
+			}
+			else{
+				String selected = nickList.getSelectedValue();
+				System.out.println(selected);
+				System.out.println(fileDirectoryTF.getText());
+				dispose();
+			}
 		}
 		else if (action == fileDirectoryButton){
 			fileChooser = new JFileChooser();
@@ -136,12 +148,12 @@ public class UserConnDialog extends JDialog implements ActionListener{
 			fileChooser.setAcceptAllFileFilterUsed(false);
 
 		    if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-		      System.out.println("getCurrentDirectory(): " + fileChooser.getCurrentDirectory());
-		      System.out.println("getSelectedFile() : " + fileChooser.getSelectedFile());
-		      fileDirectoryField.setText(fileChooser.getSelectedFile().getPath());
+		    	System.out.println("getCurrentDirectory(): " + fileChooser.getCurrentDirectory());
+		    	System.out.println("getSelectedFile() : " + fileChooser.getSelectedFile());
+		    	fileDirectoryTF.setText(fileChooser.getSelectedFile().getPath());
 		    } 
 		    else {
-		      System.out.println("No Selection ");
+		    	System.out.println("No Selection ");
 		    }
 		}
 	}

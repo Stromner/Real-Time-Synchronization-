@@ -5,8 +5,10 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
@@ -24,47 +26,60 @@ import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.TitledBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
 
+import sigmatechnology.se.realtime_file_synchronisation.network.Packets;
+import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
 
 /**
  * Client - Connection to server
  * @author Magnus Källten
  *
  */
-public class Client extends JFrame implements ActionListener{
-	/**
-	 * 
-	 */
-	
+public class Launcher extends JFrame implements ActionListener{
 	private static final long serialVersionUID = 1L;
-	JPanel leftPanel, rightPanel;
-	JButton chatButton;
-	JLabel label;
-	JTextField directoryText;
-	JTextPane updatePane, chatReadPane, chatWritePane;
-	JFileChooser fc;
-	GridBagConstraints gbc;
-	JScrollPane scrollPaneUpdate, scrollPaneChat;
-	JScrollBar vertical;
-	JSplitPane splitPane;
+	private JPanel leftPanel, rightPanel;
+	private JButton chatButton;
+	private JLabel label;
+	private JTextField directoryText;
+	private JTextPane updatePane, chatReadPane, chatWritePane;
+	private JFileChooser fc;
+	private GridBagConstraints gbc;
+	private JScrollPane scrollPaneUpdate, scrollPaneChat;
+	private JScrollBar vertical;
+	private JSplitPane splitPane;
 	
-	JMenuBar menuBar;
-	JMenu menuConn, helpMenu;
-	JMenuItem serverConn, serverDisc, userConn, userDisc;
-	JCheckBoxMenuItem cbMenuItem;
+	private JMenuBar menuBar;
+	private JMenu menuConn, helpMenu;
+	private JMenuItem serverConn, serverDisc, userConn, userDisc;
+	private JCheckBoxMenuItem cbMenuItem;
 	
-	String serverIP, serverPort, nickname;
+	private String serverIP, serverPort, nickname, friend, filePath;
+	private String[] nickList;
+	private List<Path> ignoreList;
 	
 	
 	JFrame serverConnect;
 	
-	public Client(){
+	public Launcher(){
+		// Code from gui.Main
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException | InstantiationException
+				| IllegalAccessException | UnsupportedLookAndFeelException e) {
+			e.printStackTrace();
+		}
 		
 		buildGUI();
+		setSize(new Dimension(600,400));
+		setLocationRelativeTo(null);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
+		setVisible(true);
 	}
 	
 	private void buildGUI(){
@@ -187,6 +202,12 @@ public class Client extends JFrame implements ActionListener{
 		splitPane.setOneTouchExpandable(true);
 		splitPane.setDividerLocation(250);
 		
+		serverConn.setEnabled(true);
+		serverDisc.setEnabled(false);
+		userConn.setEnabled(false);
+		userDisc.setEnabled(false);
+		chatButton.setEnabled(false);
+		
 		this.add(splitPane);
 	}
 
@@ -208,6 +229,10 @@ public class Client extends JFrame implements ActionListener{
 		}
 	}
 	
+	public void updatePane(String s){
+		writeInPane(updatePane, "\n" + s);
+	}
+	
 	public void actionPerformed(ActionEvent event){
 		Object source = event.getSource();
 		if(source == chatButton){
@@ -221,7 +246,7 @@ public class Client extends JFrame implements ActionListener{
 			}
 			
 		}
-		else if(source == serverConn) {
+		else if(source == serverConn) {		
 			//TODO Kolla om man redan är uppkopplad?
 			ServerConnDialog scd = new ServerConnDialog(new JFrame(), "Server Connection", this);
 			scd.pack();
@@ -233,10 +258,10 @@ public class Client extends JFrame implements ActionListener{
 			ucd.setVisible(true);
 		}
 		else if(source == serverDisc){
-			//TODO
+			serverDisconnected();
 		}
 		else if(source == userDisc){
-			//TODO
+			disconnectFriend();
 		}
 	}
 	
@@ -249,7 +274,7 @@ public class Client extends JFrame implements ActionListener{
 		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy H:mm:ss");
 		String formattedDate = sdf.format(date);
 		
-		//TODO Add from who
+		//TODO Add from whom
 		msg = "\n------------------------------\n" 
 				+ formattedDate + "\n" 
 				+ msg;
@@ -274,43 +299,120 @@ public class Client extends JFrame implements ActionListener{
 		writeInPane(updatePane, update);
 	}
 	
-	public void serverConnected(){
+	public void serverConnected(){		
 		//TODO server conn msg
 		serverConn.setEnabled(false);
 		serverDisc.setEnabled(true);
 		userConn.setEnabled(true);
+		userDisc.setEnabled(false);
+		chatButton.setEnabled(false);
+		
 		String msg = "";
 		writeInPane(updatePane, msg);
+		
+		// Start the client
+		Controller.getInstance().initClient();
+		Controller.getInstance().getClient().send(Packets.CONNECTSERVER, nickname);
 	}
 	
 	public void serverDisconnected(){
 		//TODO server disc msg
+		serverConn.setEnabled(true);
 		serverDisc.setEnabled(false);
+		userConn.setEnabled(false);
+		userDisc.setEnabled(false);
+		chatButton.setEnabled(false);
 		String msg = "";
 		writeInPane(updatePane, msg);
+		
+		// Disconnect the client from the server
+		Controller.getInstance().killClient();
 	}
 	
-	public void userConnected(){
+	public void connectFriend(){		
 		//TODO user conn msg
-		chatButton.setEnabled(true);
+		serverConn.setEnabled(false);
+		serverDisc.setEnabled(false);
 		userConn.setEnabled(false);
 		userDisc.setEnabled(true);
+		chatButton.setEnabled(true);
+		
 		String msg = "";
 		writeInPane(updatePane, msg);
+		
+		// Connect to user
+		Controller.getInstance().getClient().connectToUser(nickname, friend);
+		Controller.getInstance().initSynchronizeRoot();
 	}
 	
-	public void userDisconnected(){
+	public void friendConnectedToUs(String friend){
+		//TODO user conn msg
+		serverConn.setEnabled(false);
+		serverDisc.setEnabled(false);
+		userConn.setEnabled(false);
+		userDisc.setEnabled(true);
+		chatButton.setEnabled(true);
+		
+		String msg = "";
+		writeInPane(updatePane, msg);
+		
+		// Connect to user
+		this.friend = friend;
+	}
+	
+	public void disconnectFriend(){
 		//TODO user disc msg
-		chatButton.setEnabled(false);
+		serverConn.setEnabled(false);
+		serverDisc.setEnabled(true);
 		userConn.setEnabled(true);
 		userDisc.setEnabled(false);
+		chatButton.setEnabled(false);
+		
 		String msg = "";
 		writeInPane(updatePane, msg);
+		
+		// Disconnect us from the user
+		Controller.getInstance().getClient().send(Packets.DISCONNECTUSER);
+		friend = null;
 	}
 	
-	public String [] getServerNickList(){
-		//TODO Use nicknames from server
-		return new String[]{"Nick9","Nick2","Nick3","Nick4"};
+	public void friendIsDisconnecting(){
+		//TODO user disc msg
+		serverConn.setEnabled(false);
+		serverDisc.setEnabled(true);
+		userConn.setEnabled(true);
+		userDisc.setEnabled(false);
+		chatButton.setEnabled(false);
+		
+		String msg = "";
+		writeInPane(updatePane, msg);
+		
+		friend = null;
+	}
+	
+	public void setServerNickList(String[] nickList){
+		this.nickList = nickList;
+	}
+	
+	public String[] getServerNickList(){
+		return nickList;
 	}
 
+	public void setFriendInfo(String friend, String filePath, List<Path> ignoreList) {
+		this.friend = friend;
+		this.filePath = filePath;
+		this.ignoreList = ignoreList;
+	}
+
+	public String getFilePath() {
+		return filePath;
+	}
+
+	public List<Path> getIgnoreList() {
+		return ignoreList;
+	}
+	
+	public String getFriend(){
+		return friend;
+	}	
 }

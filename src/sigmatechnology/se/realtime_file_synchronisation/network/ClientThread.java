@@ -131,11 +131,11 @@ public class ClientThread extends Thread{
 					lastPackage = argsList;
 					
 					switch((Packets)argsList.get(0)){
-						case NEWUSER:
+						case CONNECTSERVER:
 							newUser(argsList);
 							break;
-						case DELETEUSER:
-							disconnectUser(argsList);
+						case DISCONNECTSERVER:
+							removeUser(argsList);
 							break;
 						case CONNECTUSER:
 							connectUsers(argsList);
@@ -175,13 +175,13 @@ public class ClientThread extends Thread{
 			
 			server.userMap.put(userName, this);
 			
-			// Inform all other users
+			// Inform all other users that are not us
 			Iterator<?> it = server.userMap.entrySet().iterator();
 			while (it.hasNext()) {
 				Map.Entry<?,?> pair = (Map.Entry<?,?>)it.next();
 				ClientThread ct = (ClientThread)pair.getValue();
 				if(ct.userName != userName){
-					ct.send(Packets.NEWUSER, userName);
+					ct.send(Packets.CONNECTSERVER, userName);
 				}
 			}
 		}
@@ -191,17 +191,17 @@ public class ClientThread extends Thread{
 		}
 	}
 	
-	private void disconnectUser(List<Object> argsList){
+	private void removeUser(List<Object> argsList){
 		System.out.println("ClientThread: Disconnect");
 		if(userName != null && server.userMap.get(userName) != null){
-			send(Packets.DISCONNECTSERVER);
-			
-			// Inform all other users
+			// Inform all other users that are not us
 			Iterator<?> it = server.userMap.entrySet().iterator();
 			while (it.hasNext()) {
 				Map.Entry<?,?> pair = (Map.Entry<?,?>)it.next();
 				ClientThread ct = (ClientThread)pair.getValue();
-				ct.send(Packets.DELETEUSER, userName);
+				if(ct.userName != userName){
+					ct.send(Packets.DISCONNECTSERVER, userName);
+				}
 			}
 
 			System.out.println("ClientThread[" + userName +"]: User " + userName + " disconnected.");
@@ -243,17 +243,17 @@ public class ClientThread extends Thread{
 	}
 	
 	private void disconnectUsers(List<Object> argsList){
+		System.out.println("ClientThread: Disconnect from user");
 		if(server.userMap.get(userName) == null){
 			send(Packets.ERROR, "You are not connected to the server");
 			return;
 		}
-		System.out.println("ClientThread: Disconnect from user");
 		if(threadFriend == null){
 			send(Packets.ERROR, "Not conected to any user. Can not disconnect.");
 			return;
 		}
 		
-		threadFriend.send(Packets.DISCONNECTUSER);
+		threadFriend.send(Packets.DISCONNECTUSER, userName);
 		threadFriend.setFriend(null);
 		threadFriend = null; // Goodbye my friend :´(
 		// Inform the user that it went ok

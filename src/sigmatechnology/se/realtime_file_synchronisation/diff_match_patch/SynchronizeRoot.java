@@ -17,6 +17,7 @@ package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -28,8 +29,10 @@ import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Diff;
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Operation;
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Patch;
+import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
+import sigmatechnology.se.realtime_file_synchronisation.network.Packets;
 
-public class SynchronizeRoot {
+public class SynchronizeRoot extends Thread{
 	public static final Charset ENCODING = Charset.forName("ISO-8859-1");
 	private diff_match_patch dmp;
 	private Path root;
@@ -54,6 +57,18 @@ public class SynchronizeRoot {
 		dmp = new diff_match_patch();
 		rootMap = new HashMap<String,SynchronizeDocument>();
 		update();
+	}
+	
+	@Override
+	public void run(){
+		while(true){
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			Controller.getInstance().getClient().send(Packets.SYNCFILE, getDiffs());
+		}
 	}
 	
 	/**

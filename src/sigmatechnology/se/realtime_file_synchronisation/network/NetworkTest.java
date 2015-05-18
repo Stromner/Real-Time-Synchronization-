@@ -4,7 +4,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import org.junit.After;
 import org.junit.Before;
@@ -14,14 +13,17 @@ import org.junit.Test;
 import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
 
 public class NetworkTest{
-	public static final int WAITTIME = 140;
+	public static final int WAITTIME = 200;
 	private String user1 = "Abba", user2 = "Dabba", user3 = "Cabba";
 	private static Server server;
 	private Client client1, client2;
+	private static Controller controller;
 	
 	@BeforeClass
 	public static void oneTimeSetUp(){
 		server = new Server();
+		controller = Controller.getInstance(); // Init the controller.
+		controller.start();
 	}
 	
 	@Before
@@ -34,12 +36,12 @@ public class NetworkTest{
 	public void cleanUp(){
 		System.out.println("\t\t--- CLEANUP ---");
 		if(server.getMap().get((user1)) != null){
-			client1.send(Packets.DELETEUSER);
+			client1.send(Packets.DISCONNECTSERVER);
 			client1.disconnect();
 		}
 			
 		if(server.getMap().get((user2)) != null){
-			client2.send(Packets.DELETEUSER);
+			client2.send(Packets.DISCONNECTSERVER);
 			client2.disconnect();
 		}
 
@@ -50,25 +52,24 @@ public class NetworkTest{
 	public void testConnection() throws InterruptedException{
 		System.out.println("\t --- testConnection ---");
 		// Connect
-		client1.send(Packets.NEWUSER, user1);
+		client1.send(Packets.CONNECTSERVER, user1);
 		Thread.sleep(WAITTIME);
 		ClientThread ct = (ClientThread)server.getMap().get(user1);
-		assertTrue(ct.getLastPackage().get(0) == Packets.NEWUSER);
+		assertTrue(ct.getLastPackage().get(0) == Packets.CONNECTSERVER);
 		assertTrue(client1.getLastPackage().get(0) == Packets.OK);
 		assertNotNull(server.getMap().get(user1));
 	
 		// Disconnect
-		client1.send(Packets.DELETEUSER);
+		client1.send(Packets.DISCONNECTSERVER);
 		Thread.sleep(WAITTIME);
 		assertNull(server.getMap().get(user1));
-		assertTrue(client1.getLastPackage().get(0) == Packets.DISCONNECTSERVER);
 	}
 	
 	@Test
 	public void testDisconnectBeforeConnect() throws InterruptedException{
 		System.out.println("\t --- testDisconnectBeforeConnect ---");
 		// Disconnect
-		client1.send(Packets.DELETEUSER);
+		client1.send(Packets.DISCONNECTSERVER);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
 	}
@@ -77,8 +78,8 @@ public class NetworkTest{
 	public void testDoubbleConnect() throws InterruptedException{
 		System.out.println("\t --- testDoubbleConnect ---");
 		// Connect
-		client1.send(Packets.NEWUSER, user1);
-		client1.send(Packets.NEWUSER, user1);
+		client1.send(Packets.CONNECTSERVER, user1);
+		client1.send(Packets.CONNECTSERVER, user1);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
 	}
@@ -87,24 +88,24 @@ public class NetworkTest{
 	public void testDoubbleDisconnect() throws InterruptedException{
 		System.out.println("\t --- testDoubbleDisconnect ---");
 		// Connect
-		client1.send(Packets.NEWUSER, user1);
+		client1.send(Packets.CONNECTSERVER, user1);
 		// Disconnect
-		client1.send(Packets.DELETEUSER);
+		client1.send(Packets.DISCONNECTSERVER);
 		
 		Thread.sleep(WAITTIME);
-		assertFalse(client1.send(Packets.DELETEUSER));
+		assertFalse(client1.send(Packets.DISCONNECTSERVER));
 	}
 	
 	@Test
 	public void testMultipleConnections() throws InterruptedException{
 		System.out.println("\t --- testMultipleConnections ---");
 		// Connect to server
-		client1.send(Packets.NEWUSER, user1);
+		client1.send(Packets.CONNECTSERVER, user1);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.OK);
 		
 		// Connect to server
-		client2.send(Packets.NEWUSER, user2);
+		client2.send(Packets.CONNECTSERVER, user2);
 		Thread.sleep(WAITTIME);
 		assertTrue(client2.getLastPackage().get(0) == Packets.OK);
 	}
@@ -113,8 +114,8 @@ public class NetworkTest{
 	public void testConnectUser() throws InterruptedException{
 		System.out.println("\t --- testConnectUser ---");
 		// Connect to server
-		client1.send(Packets.NEWUSER, user1);
-		client2.send(Packets.NEWUSER, user2);
+		client1.send(Packets.CONNECTSERVER, user1);
+		client2.send(Packets.CONNECTSERVER, user2);
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
@@ -132,8 +133,8 @@ public class NetworkTest{
 	public void testConnectNonexistingUser() throws InterruptedException{
 		System.out.println("\t --- testConnectNonexistingUser ---");
 		// Connect to server
-		client1.send(Packets.NEWUSER, user1);
-		client2.send(Packets.NEWUSER, user2);
+		client1.send(Packets.CONNECTSERVER, user1);
+		client2.send(Packets.CONNECTSERVER, user2);
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
@@ -146,8 +147,8 @@ public class NetworkTest{
 	public void testDisconnectToUserBeforeConnect() throws InterruptedException{
 		System.out.println("\t --- testDisconnectToUserBeforeConnect ---");
 		// Connect to server
-		client1.send(Packets.NEWUSER, user1);
-		client2.send(Packets.NEWUSER, user2);
+		client1.send(Packets.CONNECTSERVER, user1);
+		client2.send(Packets.CONNECTSERVER, user2);
 		Thread.sleep(WAITTIME);
 		
 		// Disconnect from user
@@ -160,8 +161,8 @@ public class NetworkTest{
 	public void testDoubleConnectToUser() throws InterruptedException{
 		System.out.println("\t --- testDoubleConnectToUser ---");
 		// Connect to server
-		client1.send(Packets.NEWUSER, user1);
-		client2.send(Packets.NEWUSER, user2);
+		client1.send(Packets.CONNECTSERVER, user1);
+		client2.send(Packets.CONNECTSERVER, user2);
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
@@ -179,8 +180,8 @@ public class NetworkTest{
 	public void testDoubleDisconnectToUser() throws InterruptedException{
 		System.out.println("\t --- testDoubleConnectToUser ---");
 		// Connect to server
-		client1.send(Packets.NEWUSER, user1);
-		client2.send(Packets.NEWUSER, user2);
+		client1.send(Packets.CONNECTSERVER, user1);
+		client2.send(Packets.CONNECTSERVER, user2);
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
@@ -197,7 +198,7 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
 	}
-	
+	/*
 	@Test
 	public void testSendDiff() throws InterruptedException{
 		System.out.println("\t --- testSendDiff ---");
@@ -211,7 +212,7 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Send diff
-		client1.send(Packets.SYNCFILE, Controller.getInstance().getRoot().getDiffs());
+		client1.send(Packets.SYNCFILE, Controller.getInstance().getSynchronizedRoot().getDiffs());
 		assertTrue(client2.getLastPackage().get(0) == Packets.SYNCFILE);
 	}
 	
@@ -224,7 +225,7 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Send diff
-		client1.send(Packets.SYNCFILE, Controller.getInstance().getRoot().getDiffs());
+		client1.send(Packets.SYNCFILE, Controller.getInstance().getSynchronizedRoot().getDiffs());
 		assertTrue(client2.getLastPackage().get(0) == Packets.ERROR);
 	}
 	
@@ -260,5 +261,5 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		System.out.println(client2.getLastPackage().get(0));
 		assertTrue(client2.getLastPackage().get(0) == Packets.ERROR);
-	}
+	}*/
 }

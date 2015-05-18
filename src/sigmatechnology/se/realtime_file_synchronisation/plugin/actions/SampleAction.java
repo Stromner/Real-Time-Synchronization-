@@ -1,15 +1,11 @@
 package sigmatechnology.se.realtime_file_synchronisation.plugin.actions;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Scanner;
-
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 
-import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.SynchronizeRoot;
+import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
 
 /**
  * Our sample action implements workbench action delegate.
@@ -21,6 +17,8 @@ import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.Synchro
  */
 public class SampleAction implements IWorkbenchWindowActionDelegate {
 	private IWorkbenchWindow window;
+	private Controller controller;
+	
 	/**
 	 * The constructor.
 	 */
@@ -34,6 +32,11 @@ public class SampleAction implements IWorkbenchWindowActionDelegate {
 	 * @see IWorkbenchWindowActionDelegate#run
 	 */
 	public void run(IAction action) {
+		if(controller == null){
+			controller = Controller.getInstance(); // Init the controller.
+			controller.start();
+		}
+		/*
 		new Thread(){
 			public void run(){
 				String sRepo1 = "C:/Users/David/Desktop/Test/src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/",
@@ -55,7 +58,7 @@ public class SampleAction implements IWorkbenchWindowActionDelegate {
 					sync2.applyDiffs(sync1.getDiffs());
 				}
 			}
-		}.start();
+		}.start();*/
 	}
 	
 	/**

@@ -63,22 +63,14 @@ public class Server{
 	 */
 	private Boolean init(){
 		String text = Util.openReadFile(Paths.get(path));
-		String[] textSplitted = text.split("\n");
-		
-		// The row after the server config text is interesting for us
-		for(int i=0;i<textSplitted.length;i++){
-			if(textSplitted[i].toLowerCase().contains("server".toLowerCase())){
-				String[] s = textSplitted[i+1].split(":");
-				try {
-					listenSocket = new ServerSocket(Integer.parseInt(s[0]));
-				} catch (NumberFormatException | IOException e) {
-					e.printStackTrace();
-				}
-				return true;
-			}
+		String[] s = text.split(":");
+		try {
+			listenSocket = new ServerSocket(Integer.parseInt(s[1]));
+		} catch (NumberFormatException | IOException e) {
+			e.printStackTrace();
+			return false;
 		}
-		
-		return false;
+		return true;
 	}
 	
 	/**

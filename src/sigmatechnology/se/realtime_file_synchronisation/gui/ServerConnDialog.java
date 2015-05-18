@@ -18,30 +18,29 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.eclipse.core.runtime.Platform;
+
 import sigmatechnology.se.realtime_file_synchronisation.Util;
 
 
-public class ServerConnDialog extends JDialog implements ActionListener{
-
-	/**
-	 * 
-	 */
-	String path = "src/sigmatechnology/se/realtime_file_synchronisation/config.txt";
-	
-	JLabel label;
-	JTextField nickTF, serverIpTF, serverPortTF;
-	JPanel panel;
-	JButton connectButton;
-	GridBagConstraints gbc;
-	Client client;
-	
-	String[] ipAndPort;
-	
+public class ServerConnDialog extends JDialog implements ActionListener{	
 	private static final long serialVersionUID = 1L;
 	
-	public ServerConnDialog(JFrame frame, String title, Client client) {
+	private JLabel label;
+	private JTextField nickTF, serverIpTF, serverPortTF;
+	private JPanel panel;
+	private JButton connectButton;
+	private GridBagConstraints gbc;
+	private Launcher client;
+	
+	private String path;
+	private String[] ipAndPort;
+	
+	public ServerConnDialog(JFrame frame, String title, Launcher client) {
 		super(frame, title);
 		this.client = client;
+		
+		path = Platform.getInstallLocation().getURL().toString().substring(6) + "plugins/sigmatechnology.se.realtime_file_synchronisation/config.txt";
 		
 		panel = new JPanel(new GridBagLayout());
 		gbc = new GridBagConstraints();
@@ -50,11 +49,10 @@ public class ServerConnDialog extends JDialog implements ActionListener{
 		nickTF = new JTextField();
 		serverIpTF = new JTextField();
 		serverPortTF = new JTextField();
-		serverIpTF = new JTextField();
 		connectButton = new JButton();
 		//connectButton.setEnabled(false);
 		
-		ipAndPort = readIpPortFromFile(path);
+		ipAndPort = Util.openReadFile(Paths.get(path)).split(":");
 		
 		//Nickname
 		label = new JLabel();
@@ -148,49 +146,32 @@ public class ServerConnDialog extends JDialog implements ActionListener{
 				client.setServerInformation(serverIpTF.getText(), serverPortTF.getText(), nickTF.getText());
 				//TODO Controller.connectToServer(serverIpTF.getText(), serverPortTF.getText());
 				//If the IP or port has changed the new values will be written to the config.txt
-				if(serverIpTF.getText().compareTo(ipAndPort[0]) != 0 || serverPortTF.getText().compareTo(ipAndPort[1]) != 0){
+				if(serverIpTF == null || serverIpTF.getText().compareTo(ipAndPort[0]) != 0 || serverPortTF.getText().compareTo(ipAndPort[1]) != 0){
 					prepareFile(serverIpTF.getText(), serverPortTF.getText());
 				}
 			}
+			
+			client.serverConnected();
 		}
 		dispose();
 	}
 	
-	/**
-	 * 
-	 * @param path
-	 */
-	public String[] readIpPortFromFile(String path){
-		File file = new File(path);
-		String[] textSplitted = {"",""};
-		if(file.exists()){
-			String text = Util.openReadFile(Paths.get(path));
-			
-			//If the text file is empty
-			if(!text.equals("")){
-				textSplitted = text.split("\n");
-				// The row after the client config text is interesting for us
-				for(int i=0;i<textSplitted.length;i++){
-					if(textSplitted[i].toLowerCase().contains("Client".toLowerCase())){
-						return textSplitted[i+1].split(":");
-					}
-				}
-			}
-		}
-		return textSplitted;
-	}
-	
 	private void prepareFile(String ip, String port){
-        // Create the file if it doesn't exist from a previous run of the program
-        File f = new File(path);
+		// Create the file and folders if they don't exist from a previous run of the program
+		File f = new File(path.substring(0, path.length()-10));
+		f.mkdir();
+		
+        f = new File(path);
         try{
         	if(!f.exists()){
         		f.createNewFile();
         	}
         }
-        catch(IOException e){e.printStackTrace();}
+        catch(IOException e){
+        	e.printStackTrace();
+        }
        
-        String s = "# Client config\n" + ip + ":" + port;
+        String s = ip + ":" + port;
         
         Util.openWriteFile(Paths.get(path), s);
 	}

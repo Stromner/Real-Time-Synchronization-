@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.eclipse.core.runtime.Platform;
+
 import sigmatechnology.se.realtime_file_synchronisation.Util;
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.SynchronizeDocument;
 import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
@@ -31,7 +33,8 @@ public class Client {
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
 	private Thread receiveThread;
-	private String path = "src/sigmatechnology/se/realtime_file_synchronisation/config.txt";
+	private String path = Platform.getInstallLocation().getURL().toString().substring(6) + "plugins/sigmatechnology.se.realtime_file_synchronisation/config.txt";
+	private String friend;
 	private List<Object> lastPackage;
 	
 	/**
@@ -48,6 +51,15 @@ public class Client {
 	 */
 	public void connectToUser(String me, String user){
 		send(Packets.CONNECTUSER, me, user);
+		friend = user;
+	}
+	
+	public Socket getSocket(){
+		return socket;
+	}
+	
+	public String getFriend(){
+		return friend;
 	}
 	
 	/**
@@ -90,30 +102,23 @@ public class Client {
 	 */
 	private void init(){
 		String text = Util.openReadFile(Paths.get(path));
-		String[] textSplitted = text.split("\n");
+		String[] s = text.split(":");
 		
-		// The row after the client config text is interesting for us
-		for(int i=0;i<textSplitted.length;i++){
-			if(textSplitted[i].toLowerCase().contains("Client".toLowerCase())){
-				String[] s = textSplitted[i+1].split(":");
-				try {
-					// Create a new socket with its I/O
-					socket = new Socket(s[0], Integer.parseInt(s[1]));
-					out = new ObjectOutputStream(socket.getOutputStream());
-					in = new ObjectInputStream(socket.getInputStream());
-					
-					// Listen is blocking so runs in own thread
-					receiveThread = new Thread(){
-						public void run(){
-							receive();
-						}
-					};
-					receiveThread.start();
-				} catch (NumberFormatException | IOException e) {
-					disconnect();
+		try {
+			// Create a new socket with its I/O
+			socket = new Socket(s[0], Integer.parseInt(s[1]));
+			out = new ObjectOutputStream(socket.getOutputStream());
+			in = new ObjectInputStream(socket.getInputStream());
+			
+			// Listen is blocking so runs in own thread
+			receiveThread = new Thread(){
+				public void run(){
+					receive();
 				}
-				break;
-			}
+			};
+			receiveThread.start();
+		} catch (NumberFormatException | IOException e) {
+			disconnect();
 		}
 	}
 	
@@ -129,25 +134,28 @@ public class Client {
 				lastPackage = argsList;
 						
 				switch((Packets)argsList.get(0)){
-					case NEWUSER:
+					case CONNECTSERVER:
 						System.out.println("Client: Connect");
-						Controller.getInstance().updateUserList(Packets.NEWUSER, (String)argsList.get(1));
+						Controller.getInstance().updateUserList(Packets.CONNECTSERVER, (String)argsList.get(1));
 						break;
-					case DELETEUSER:
+					case DISCONNECTSERVER:
 						System.out.println("Client: Disconnect");
-						Controller.getInstance().updateUserList(Packets.DELETEUSER, (String)argsList.get(1));
+						Controller.getInstance().updateUserList(Packets.DISCONNECTSERVER, (String)argsList.get(1));
 						break;
 					case CONNECTUSER:
 						System.out.println("Client: Connect to user");
 						Controller.getInstance().userConnected((String)argsList.get(1), true);
+						friend = (String) argsList.get(1);
 						break;
 					case DISCONNECTUSER:
 						System.out.println("Client: Disconnect from user");
 						Controller.getInstance().userConnected((String)argsList.get(1), false);
+						friend = null;
 						break;
 					case SYNCFILE:
 						System.out.println("Client: SyncFile");
-						Controller.getInstance().getRoot().applyDiffs((LinkedList<SynchronizeDocument>) argsList.get(1));
+						Controller.getInstance().getSynchronizeRoot().applyDiffs((LinkedList<SynchronizeDocument>) argsList.get(1));
+						Controller.getInstance().getLauncher().updatePane("New sync");
 						break;
 					case CHAT:
 						System.out.println("Client: Chat");
@@ -158,9 +166,6 @@ public class Client {
 						break;
 					case OK:
 						System.out.println("Client: Ok");
-						break;
-					case DISCONNECTSERVER:
-						disconnect();
 						break;
 					default:
 						break;

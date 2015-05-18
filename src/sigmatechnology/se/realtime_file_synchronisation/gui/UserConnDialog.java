@@ -31,7 +31,7 @@ public class UserConnDialog extends JDialog implements ActionListener{
 	JPanel panel;
 	JButton doneButton, fileDirectoryButton;
 	GridBagConstraints gbc;
-	Client client;
+	Launcher client;
 	JFileChooser fileChooser;
 	JScrollPane nickScrollPane;
 	JList<String> nickList;
@@ -39,7 +39,7 @@ public class UserConnDialog extends JDialog implements ActionListener{
 	
 	private static final long serialVersionUID = 1L;
 	
-	public UserConnDialog(JFrame frame, String title, Client client) {
+	public UserConnDialog(JFrame frame, String title, Launcher client) {
 		super(frame, title);
 		System.out.println("userconndialog");
 		this.client = client;
@@ -120,8 +120,10 @@ public class UserConnDialog extends JDialog implements ActionListener{
 	
 	private void updateNickList(String[] nickList) {
 		model.clear();
-		for(int i=0; i<nickList.length; i++){
-			model.addElement(nickList[i]);
+		if(nickList != null && nickList.length > 0){
+			for(int i=0; i<nickList.length; i++){
+				model.addElement(nickList[i]);
+			}
 		}
 	}
 
@@ -137,7 +139,11 @@ public class UserConnDialog extends JDialog implements ActionListener{
 				String selected = nickList.getSelectedValue();
 				System.out.println(selected);
 				System.out.println(fileDirectoryTF.getText());
+				// TODO Add ignore list
 				dispose();
+				
+				client.setFriendInfo(selected, fileDirectoryTF.getText(), null);
+				client.connectFriend();
 			}
 		}
 		else if (action == fileDirectoryButton){

@@ -19,6 +19,9 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 
+import sigmatechnology.se.realtime_file_synchronisation.network.Packets;
+import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
+
 
 public class UserConnDialog extends JDialog implements ActionListener{
 
@@ -31,7 +34,7 @@ public class UserConnDialog extends JDialog implements ActionListener{
 	JPanel panel;
 	JButton doneButton, fileDirectoryButton;
 	GridBagConstraints gbc;
-	Launcher client;
+	Launcher launcher;
 	JFileChooser fileChooser;
 	JScrollPane nickScrollPane;
 	JList<String> nickList;
@@ -39,10 +42,9 @@ public class UserConnDialog extends JDialog implements ActionListener{
 	
 	private static final long serialVersionUID = 1L;
 	
-	public UserConnDialog(JFrame frame, String title, Launcher client) {
+	public UserConnDialog(JFrame frame, String title, Launcher launcher) {
 		super(frame, title);
-		System.out.println("userconndialog");
-		this.client = client;
+		this.launcher = launcher;
 		
 		panel = new JPanel(new GridBagLayout());
 		gbc = new GridBagConstraints();
@@ -51,9 +53,10 @@ public class UserConnDialog extends JDialog implements ActionListener{
 		//Nickname list from server to choose from
 		label = new JLabel();
 		label.setText("Nickname");
-		gbc.weightx = 1;
-		gbc.weighty = 1;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.SOUTH;
+		gbc.weightx = 0;
+		gbc.weighty = 0;
 		gbc.gridx = 0;
 		gbc.gridy = 0;
 		gbc.insets = new Insets(20, 20, 0, 20);
@@ -62,8 +65,12 @@ public class UserConnDialog extends JDialog implements ActionListener{
 		model = new DefaultListModel<String>();
 		nickList = new JList<String>(model);
 	    nickList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-	    String testList[] = client.getServerNickList();
+	    String testList[] = launcher.getServerNickList();
 	    updateNickList(testList);
+	    gbc.fill = GridBagConstraints.BOTH;
+	    gbc.anchor = GridBagConstraints.CENTER;
+	    gbc.weightx = 1;
+		gbc.weighty = 1;
 	    gbc.gridy = 1;
 	    gbc.gridwidth = 2;
 	    gbc.insets = new Insets(0, 20, 0, 20);
@@ -77,6 +84,10 @@ public class UserConnDialog extends JDialog implements ActionListener{
 		//Choose file of directory label and button
 		label = new JLabel();
 		label.setText("Choose file/directory");
+		gbc.fill = GridBagConstraints.NONE;
+		gbc.anchor = GridBagConstraints.WEST;
+		gbc.weightx = 0;
+		gbc.weighty = 0;
 		gbc.gridy = 2;
 		gbc.gridwidth = 1;
 		gbc.insets = new Insets(20, 20, 0, 20);
@@ -85,6 +96,9 @@ public class UserConnDialog extends JDialog implements ActionListener{
 		fileDirectoryTF = new JTextField();
 		fileDirectoryTF.setEditable(false);
 		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.CENTER;
+		gbc.weightx = 1;
+		gbc.weighty = 0;
 		gbc.gridy = 3;
 		//gbc.gridwidth = 2;
 		gbc.insets = new Insets(0, 20, 0, 0);
@@ -94,6 +108,9 @@ public class UserConnDialog extends JDialog implements ActionListener{
 		fileDirectoryButton.setText("Select");
 		fileDirectoryButton.addActionListener(this);
 		gbc.fill = GridBagConstraints.NONE;
+		gbc.anchor = GridBagConstraints.EAST;
+		gbc.weightx = 0;
+		gbc.weighty = 0;
 		gbc.gridx = 1;
 		gbc.gridwidth = 1;
 		gbc.insets = new Insets(0, 0, 0, 20);
@@ -104,6 +121,7 @@ public class UserConnDialog extends JDialog implements ActionListener{
 		doneButton = new JButton();
 		doneButton.setText("Done");
 		doneButton.addActionListener(this);
+		gbc.anchor = GridBagConstraints.CENTER;
 		gbc.gridy = 4;
 		gbc.gridx = 0;
 		gbc.gridwidth = 2;
@@ -115,7 +133,7 @@ public class UserConnDialog extends JDialog implements ActionListener{
 		
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setModal(true);
-		setLocationRelativeTo(null);
+		setLocationRelativeTo(launcher);
 	}
 	
 	private void updateNickList(String[] nickList) {
@@ -140,16 +158,17 @@ public class UserConnDialog extends JDialog implements ActionListener{
 				System.out.println(selected);
 				System.out.println(fileDirectoryTF.getText());
 				// TODO Add ignore list
-				dispose();
 				
-				client.setFriendInfo(selected, fileDirectoryTF.getText(), null);
-				client.connectFriend();
+				launcher.setFriendInfo(fileDirectoryTF.getText(), null);
+				Controller.getInstance().getClient().send(Packets.STARTCOLLABORATION, selected, fileDirectoryTF.getText());
+				
+				dispose();			
 			}
 		}
 		else if (action == fileDirectoryButton){
 			fileChooser = new JFileChooser();
 			fileChooser.setCurrentDirectory(new java.io.File("."));
-			fileChooser.setDialogTitle("choosertitle");
+			fileChooser.setDialogTitle("Choose Directory/File");
 			fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 			fileChooser.setAcceptAllFileFilterUsed(false);
 

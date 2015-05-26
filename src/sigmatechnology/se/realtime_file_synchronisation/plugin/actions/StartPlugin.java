@@ -1,10 +1,15 @@
 package sigmatechnology.se.realtime_file_synchronisation.plugin.actions;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Scanner;
+
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 
+import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.SynchronizeRoot;
 import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
 
 /**
@@ -15,14 +20,14 @@ import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
  * delegated to it.
  * @see IWorkbenchWindowActionDelegate
  */
-public class SampleAction implements IWorkbenchWindowActionDelegate {
+public class StartPlugin implements IWorkbenchWindowActionDelegate {
 	private IWorkbenchWindow window;
 	private Controller controller;
 	
 	/**
 	 * The constructor.
 	 */
-	public SampleAction() {
+	public StartPlugin() {
 	}
 
 	/**
@@ -36,8 +41,8 @@ public class SampleAction implements IWorkbenchWindowActionDelegate {
 			controller = Controller.getInstance(); // Init the controller.
 			controller.start();
 		}
-		/*
-		new Thread(){
+		
+		/*new Thread(){
 			public void run(){
 				String sRepo1 = "C:/Users/David/Desktop/Test/src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/",
 						sRepo2 = "C:/Users/David/Desktop/Test/src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/";
@@ -54,7 +59,7 @@ public class SampleAction implements IWorkbenchWindowActionDelegate {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					System.out.println("New diff cycle:");
+					//System.out.println("New diff cycle:");
 					sync2.applyDiffs(sync1.getDiffs());
 				}
 			}

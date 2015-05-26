@@ -56,7 +56,7 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		ClientThread ct = (ClientThread)server.getMap().get(user1);
 		assertTrue(ct.getLastPackage().get(0) == Packets.CONNECTSERVER);
-		assertTrue(client1.getLastPackage().get(0) == Packets.OK);
+		assertTrue(client1.getLastPackage().get(0) == Packets.GRANTACCESS);
 		assertNotNull(server.getMap().get(user1));
 	
 		// Disconnect
@@ -71,7 +71,7 @@ public class NetworkTest{
 		// Disconnect
 		client1.send(Packets.DISCONNECTSERVER);
 		Thread.sleep(WAITTIME);
-		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
+		assertNull(client1.getLastPackage());
 	}
 	
 	@Test
@@ -81,7 +81,7 @@ public class NetworkTest{
 		client1.send(Packets.CONNECTSERVER, user1);
 		client1.send(Packets.CONNECTSERVER, user1);
 		Thread.sleep(WAITTIME);
-		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
+		assertTrue(client1.getLastPackage().get(0) == Packets.DENYACCESS);
 	}
 	
 	@Test
@@ -102,12 +102,12 @@ public class NetworkTest{
 		// Connect to server
 		client1.send(Packets.CONNECTSERVER, user1);
 		Thread.sleep(WAITTIME);
-		assertTrue(client1.getLastPackage().get(0) == Packets.OK);
+		assertTrue(client1.getLastPackage().get(0) == Packets.GRANTACCESS);
 		
 		// Connect to server
 		client2.send(Packets.CONNECTSERVER, user2);
 		Thread.sleep(WAITTIME);
-		assertTrue(client2.getLastPackage().get(0) == Packets.OK);
+		assertTrue(client2.getLastPackage().get(0) == Packets.GRANTACCESS);
 	}
 	
 	@Test
@@ -119,14 +119,14 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
-		client1.send(Packets.CONNECTUSER, user2);
+		client1.send(Packets.STARTCOLLABORATION, user2);
 		Thread.sleep(WAITTIME);
-		assertTrue(client1.getLastPackage().get(0) == Packets.OK);
+		assertTrue(client1.getLastPackage().get(0) == Packets.STARTCOLLABORATION);
 		
 		// Disconnect from user
-		client1.send(Packets.DISCONNECTUSER);
+		client1.send(Packets.STOPCOLLABORATION);
 		Thread.sleep(WAITTIME);
-		assertTrue(client1.getLastPackage().get(0) == Packets.OK);
+		assertTrue(client1.getLastPackage().get(0) == Packets.STOPCOLLABORATION);
 	}
 	
 	@Test
@@ -138,7 +138,7 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
-		client1.send(Packets.CONNECTUSER, user3);
+		client1.send(Packets.STARTCOLLABORATION, user3);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
 	}
@@ -152,7 +152,7 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Disconnect from user
-		client1.send(Packets.DISCONNECTUSER);
+		client1.send(Packets.STOPCOLLABORATION);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
 	}
@@ -166,12 +166,12 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
-		client1.send(Packets.CONNECTUSER, user2);
+		client1.send(Packets.STARTCOLLABORATION, user2);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.OK);
 		
 		// Connect to user
-		client1.send(Packets.CONNECTUSER, user2);
+		client1.send(Packets.STARTCOLLABORATION, user2);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
 	}
@@ -185,20 +185,20 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
-		client1.send(Packets.CONNECTUSER, user2);
+		client1.send(Packets.STARTCOLLABORATION, user2);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.OK);
 		
 		// Disconnect from user
-		client1.send(Packets.DISCONNECTUSER);
+		client1.send(Packets.STOPCOLLABORATION);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.OK);
 		// Disconnect from user
-		client1.send(Packets.DISCONNECTUSER);
+		client1.send(Packets.STOPCOLLABORATION);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
 	}
-	/*
+	
 	@Test
 	public void testSendDiff() throws InterruptedException{
 		System.out.println("\t --- testSendDiff ---");
@@ -208,11 +208,11 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
-		client1.send(Packets.CONNECTUSER, user2);
+		client1.send(Packets.STARTCOLLABORATION, user2);
 		Thread.sleep(WAITTIME);
 		
 		// Send diff
-		client1.send(Packets.SYNCFILE, Controller.getInstance().getSynchronizedRoot().getDiffs());
+		client1.send(Packets.SYNCFILE, Controller.getInstance().getSynchronizeRoot().getDiffs());
 		assertTrue(client2.getLastPackage().get(0) == Packets.SYNCFILE);
 	}
 	
@@ -225,7 +225,7 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Send diff
-		client1.send(Packets.SYNCFILE, Controller.getInstance().getSynchronizedRoot().getDiffs());
+		client1.send(Packets.SYNCFILE, Controller.getInstance().getSynchronizeRoot().getDiffs());
 		assertTrue(client2.getLastPackage().get(0) == Packets.ERROR);
 	}
 	
@@ -238,7 +238,7 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		
 		// Connect to user
-		client1.send(Packets.CONNECTUSER, user2);
+		client1.send(Packets.STARTCOLLABORATION, user2);
 		Thread.sleep(WAITTIME);
 		
 		// Send Message
@@ -261,5 +261,5 @@ public class NetworkTest{
 		Thread.sleep(WAITTIME);
 		System.out.println(client2.getLastPackage().get(0));
 		assertTrue(client2.getLastPackage().get(0) == Packets.ERROR);
-	}*/
+	}
 }

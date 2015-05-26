@@ -8,17 +8,18 @@ package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
  */
 
 
-import java.nio.file.Path;
+import java.io.Serializable;
 import java.util.LinkedList;
 
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil.diff_match_patch.Diff;
 
-public class SynchronizeDocument {
-	private Path path;
+public class SynchronizeDocument implements Serializable{
+	private static final long serialVersionUID = 903627564529111834L;
+	private String path;
 	private String currentData;
 	private LinkedList<Diff> diffs;
 	
-	public SynchronizeDocument(Path p, String s){
+	public SynchronizeDocument(String p, String s){
 		path=p;
 		currentData=s;
 	}
@@ -27,7 +28,7 @@ public class SynchronizeDocument {
 		return currentData;
 	}
 	
-	public Path getPath(){
+	public String getPath(){
 		return path;
 	}
 	

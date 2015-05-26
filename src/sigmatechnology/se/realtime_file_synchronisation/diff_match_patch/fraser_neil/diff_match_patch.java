@@ -19,6 +19,7 @@
 
 package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.fraser_neil;
 
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -2305,8 +2306,9 @@ public class diff_match_patch {
   /**
    * Class representing one diff operation.
    */
-  public static class Diff {
-    /**
+  public static class Diff implements Serializable{
+	private static final long serialVersionUID = -293902993370525057L;
+	/**
      * One of: INSERT, DELETE or EQUAL.
      */
     public Operation operation;

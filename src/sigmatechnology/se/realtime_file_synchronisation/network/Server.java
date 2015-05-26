@@ -20,10 +20,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import sigmatechnology.se.realtime_file_synchronisation.Util;
 
-// TODO Implement all the receive methods
-// TODO Implement all the send methods
-// TODO Look over the safety measures
-
 public class Server{
 	private ServerSocket listenSocket;
 	private Thread listenThread;
@@ -89,6 +85,11 @@ public class Server{
 				e.printStackTrace();
 				listenThread.interrupt();
 			}
+		}
+		
+		// Stop all threads
+		for (ClientThread t : threadSet) {
+			t.interrupt();
 		}
 	}
 }

@@ -1,5 +1,9 @@
 package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -8,16 +12,15 @@ import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 
-import junit.framework.TestCase;
-
 import org.eclipse.ui.PartInitException;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import sigmatechnology.se.realtime_file_synchronisation.Util;
 
-public class SynchronizeRootTest extends TestCase{
-	private final String sRepo1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/",
+public class SynchronizeRootTest{
+	private static final String sRepo1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/",
 				sRepo2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/",
 				sIgnoreFolder1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/Ignore",
 				sIgnoreFolder2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/Ignore",
@@ -27,34 +30,28 @@ public class SynchronizeRootTest extends TestCase{
 				sSend2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/send.txt",
 				sRecieve1 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/recieve.txt",
 				sRecieve2 = "src/sigmatechnology/se/realtime_file_synchronisation/TestRepo2/recieve.txt";
-	private Path docSend1, docSend2, repo1, repo2;
+	private static Path docSend1, docSend2, repo1, repo2;
 	private SynchronizeRoot syncRepo1, syncRepo2;
-	private static Boolean oneTimeSetUpDone = false;
+	
+	@BeforeClass
+	public static void oneTimeSetUp(){
+		repo1 = prepareFolder(sRepo1);
+		repo2 = prepareFolder(sRepo2);
+		prepareFolder(sIgnoreFolder1);
+		prepareFolder(sIgnoreFolder2);
+		prepareFile(sIgnoreFile1);
+		prepareFile(sIgnoreFile2);
+		prepareFile(sRecieve1);
+		prepareFile(sRecieve2);
+		docSend1 = prepareFile(sSend1);
+		docSend2 = prepareFile(sSend2);
+	}
 	
 	@Before
 	public void setUp(){
-		if(!oneTimeSetUpDone){
-			repo1 = prepareFolder(sRepo1);
-			repo2 = prepareFolder(sRepo2);
-			prepareFolder(sIgnoreFolder1);
-			prepareFolder(sIgnoreFolder2);
-			prepareFile(sIgnoreFile1);
-			prepareFile(sIgnoreFile2);
-			prepareFile(sSend1);
-			prepareFile(sSend2);
-			prepareFile(sRecieve1);
-			prepareFile(sRecieve2);
-			docSend1 = prepareFile(sSend1);
-			docSend2 = prepareFile(sSend2);
-			syncRepo1 = new SynchronizeRoot(repo1, null);
-			syncRepo2 = new SynchronizeRoot(repo2, null);
-			oneTimeSetUpDone = true;
-		}
+		syncRepo1 = new SynchronizeRoot(repo1, null);
+		syncRepo2 = new SynchronizeRoot(repo2, null);
 		
-		syncRepo1.update();
-		syncRepo1.setIgnoreList(null);
-		syncRepo2.update();
-		syncRepo2.setIgnoreList(null);
 		emptyFile(sSend1);
 		emptyFile(sSend2);
 	}
@@ -63,14 +60,16 @@ public class SynchronizeRootTest extends TestCase{
 	// Single File Tests without Eclipse
 	//
 	@Test
-	public void testEmptyToOneChar(){
+	public void testEmptyToOneChar() throws InterruptedException{
+		System.out.println("\t\t--- testEmptyToOneChar ---");
 		Util.openWriteFile(docSend1, "a");
 		syncRepo2.applyDiffs(syncRepo1.getDiffs());
-		assertEquals(true, Util.openReadFile(docSend2).equals("a"));
+		assertTrue(Util.openReadFile(docSend2).equals("a"));
 	}
 	
 	@Test
 	public void testOneCharToEmpty(){
+		System.out.println("\t\t--- testOneCharToEmpty ---");
 		Util.openWriteFile(docSend1, "a");
 		syncRepo1.getDiffs(); // Update the base string
 		
@@ -81,6 +80,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testOneRowToMany(){
+		System.out.println("\t\t--- testOneRowToMany ---");
 		Util.openWriteFile(docSend1, "a");
 		Util.openWriteFile(docSend2, "a");
 		syncRepo1.getDiffs(); // Update the base string
@@ -93,6 +93,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testManyRowToOne(){
+		System.out.println("\t\t--- testManyRowToOne ---");
 		Util.openWriteFile(docSend1, "a\na");
 		Util.openWriteFile(docSend2, "a\na");
 		syncRepo1.getDiffs(); // Update the base string
@@ -105,6 +106,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testManyRowsToLess(){
+		System.out.println("\t\t--- testManyRowsToLess ---");
 		Util.openWriteFile(docSend1, "a\nb\nc\nd");
 		Util.openWriteFile(docSend2, "a\nb\nc\nd");
 		syncRepo1.getDiffs(); // Update the base string
@@ -117,6 +119,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testManyRowsToMore(){
+		System.out.println("\t\t--- testManyRowsToMore ---");
 		Util.openWriteFile(docSend1, "a\nb\nc\nd");
 		Util.openWriteFile(docSend2, "a\nb\nc\nd");
 		syncRepo1.getDiffs(); // Update the base string
@@ -129,6 +132,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testDifferenceBetweenFiles(){
+		System.out.println("\t\t--- testDifferenceBetweenFiles ---");
 		Util.openWriteFile(docSend1, "abba\ndabba\ncabba\ndabba");
 		Util.openWriteFile(docSend2, "abba\ndabba\nMOLA\ndabba");
 		syncRepo1.getDiffs(); // Update the base string
@@ -141,6 +145,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testSwedishCharacters(){
+		System.out.println("\t\t--- testSwedishCharacters ---");
 		Util.openWriteFile(docSend1, "едц");
 		syncRepo2.applyDiffs(syncRepo1.getDiffs());
 		assertEquals(true, Util.openReadFile(docSend2).equals("едц"));
@@ -148,6 +153,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testReplaceDocument(){
+		System.out.println("\t\t--- testReplaceDocument ---");
 		Util.openWriteFile(docSend1, "One day I went to the forrest\nto pick some flowers.");
 		Util.openWriteFile(docSend2, "One day I went to the forrest\nto pick some flowers.");
 		syncRepo1.getDiffs(); // Update the base string
@@ -164,6 +170,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testDocumentSync() throws PartInitException{
+		System.out.println("\t\t--- testDocumentSync ---");
 		// Open an existing file in the editor
 		//IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 		//org.eclipse.core.runtime.Path path = new org.eclipse.core.runtime.Path("C:/Users/David/Desktop/Test/src/sigmatechnology/se/realtime_file_synchronisation/TestRepo1/"+sSend1); // Conflicting import, must use full package name
@@ -174,6 +181,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testCursorPosition(){
+		System.out.println("\t\t--- testCursorPosition ---");
 		fail();
 	}
 	
@@ -183,6 +191,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testDocumentAsRoot(){
+		System.out.println("\t\t--- testDocumentAsRoot ---");
 		SynchronizeRoot sync1 = new SynchronizeRoot(docSend1, null);
 		SynchronizeRoot sync2 = new SynchronizeRoot(docSend2, null);
 		
@@ -193,6 +202,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testTwoDocumentsSync(){
+		System.out.println("\t\t--- testTwoDocumentsSync ---");
 		// Fetch the path for the two test documents extra text documents created
 		// at the start.
 		Path docRecieve1 = prepareFile(sRecieve1),
@@ -210,6 +220,7 @@ public class SynchronizeRootTest extends TestCase{
 	
 	@Test
 	public void testIgnoreList(){
+		System.out.println("\t\t--- testIgnoreList ---");
 		// Test for a simple file
 		List<Path> ll = new LinkedList<Path>();
 		Path p = prepareFile(sIgnoreFile1);
@@ -233,7 +244,7 @@ public class SynchronizeRootTest extends TestCase{
 		}
 	}
 	
-	private Path prepareFile(String s){
+	private static Path prepareFile(String s){
 		// Create the file if it doesn't exist from a previous run of the program
 		File f = new File(s);
 		try{
@@ -253,7 +264,7 @@ public class SynchronizeRootTest extends TestCase{
 		return p;
 	}
 	
-	private Path prepareFolder(String s){
+	private static Path prepareFolder(String s){
 		// Create the file if it doesn't exist from a previous run of the program.
 		File f = new File(s);
 		f.mkdir();
@@ -263,7 +274,7 @@ public class SynchronizeRootTest extends TestCase{
 		return p;
 	}
 	
-	private void emptyFile(String s){
+	private static void emptyFile(String s){
 		// Empty the file in case of old data
 		try {
 			PrintWriter pw = new PrintWriter(s);

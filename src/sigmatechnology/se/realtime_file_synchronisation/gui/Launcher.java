@@ -14,7 +14,6 @@ import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -22,15 +21,15 @@ import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
-import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.TitledBorder;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.StyledDocument;
+import javax.swing.text.Document;
 
 import sigmatechnology.se.realtime_file_synchronisation.network.Packets;
 import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
@@ -42,12 +41,9 @@ import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
  */
 public class Launcher extends JFrame implements ActionListener{
 	private static final long serialVersionUID = 1L;
-	private JPanel leftPanel, rightPanel;
+	private JPanel rightPanel;
 	private JButton chatButton;
-	private JLabel label;
-	private JTextField directoryText;
 	private JTextPane updatePane, chatReadPane, chatWritePane;
-	private JFileChooser fc;
 	private GridBagConstraints gbc;
 	private JScrollPane scrollPaneUpdate, scrollPaneChat;
 	private JScrollBar vertical;
@@ -58,7 +54,7 @@ public class Launcher extends JFrame implements ActionListener{
 	private JMenuItem serverConn, serverDisc, userConn, userDisc;
 	private JCheckBoxMenuItem cbMenuItem;
 	
-	private String serverIP, serverPort, nickname, friend, filePath;
+	private String nickname, friend, filePath;
 	private String[] nickList;
 	private List<Path> ignoreList;
 	
@@ -67,6 +63,7 @@ public class Launcher extends JFrame implements ActionListener{
 	
 	public Launcher(){
 		// Code from gui.Main
+		//this.setTitle("Synchronizer 1.0");
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException
@@ -84,15 +81,11 @@ public class Launcher extends JFrame implements ActionListener{
 	
 	private void buildGUI(){
 		gbc = new GridBagConstraints();
-		fc = new JFileChooser();
+		new JFileChooser();
 		rightPanel = new JPanel(new GridBagLayout());
-		leftPanel = new JPanel();
-		
-		
+		//new JPanel();
 		
 		//Where the GUI is created:
-		
-
 		//Create the menu bar.
 		menuBar = new JMenuBar();
 
@@ -140,7 +133,7 @@ public class Launcher extends JFrame implements ActionListener{
 		setJMenuBar(menuBar);
 		
 		updatePane = new JTextPane();
-		updatePane.setText("Updates text");
+		updatePane.setText("");
 		updatePane.setEditable(false);
 		updatePane.setBorder(new TitledBorder("Updates"));
 		
@@ -152,8 +145,8 @@ public class Launcher extends JFrame implements ActionListener{
 		
 		//ChatReadPane
 		chatReadPane = new JTextPane();
-		chatReadPane.setText("test chat text");
-		chatReadPane.setBorder(new TitledBorder("ReadChat"));
+		chatReadPane.setText("");
+		chatReadPane.setBorder(new TitledBorder("Chat"));
 		chatReadPane.setEditable(false);
 		gbc.fill = GridBagConstraints.BOTH;
 		gbc.weightx = 1;
@@ -170,7 +163,7 @@ public class Launcher extends JFrame implements ActionListener{
 		
 		//ChatWritePane
 		chatWritePane = new JTextPane();
-		chatWritePane.setText("Write chat test");
+		chatWritePane.setText("");
 		//chatWritePane.setBorder(new TitledBorder("WriteChat"));
 		chatWritePane.setPreferredSize(new Dimension(0, 72));
 		gbc.fill = GridBagConstraints.BOTH;
@@ -221,12 +214,21 @@ public class Launcher extends JFrame implements ActionListener{
 			//TODO change msg, add time stamp or whatever
 		}
 		
-		StyledDocument doc = textPane.getStyledDocument();
-		try {
-			doc.insertString(doc.getLength(), msg, null);
-		} catch (BadLocationException e) {
-			e.printStackTrace();
-		}
+		Document doc = textPane.getDocument();
+		// run will be executed on the EDT
+		SwingUtilities.invokeLater(new Runnable(){
+		    @Override
+		    public void run()
+		    {
+		    	try {
+					doc.insertString(doc.getLength(), msg, null);
+				} catch (BadLocationException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		    }
+		});
+		//doc.insertString(doc.getLength(), msg, null);
 	}
 	
 	public void updatePane(String s){
@@ -240,28 +242,31 @@ public class Launcher extends JFrame implements ActionListener{
 				return;
 			}
 			else{
-				addToChat(chatWritePane.getText(), "Me");
-				//TODO set to "" when done testing.
-				chatWritePane.setText("Test text");
+				addToChat(chatWritePane.getText(), nickname);
+				Controller.getInstance().getClient().send(Packets.CHAT, chatWritePane.getText());
+				chatWritePane.setText("");
 			}
 			
 		}
-		else if(source == serverConn) {		
-			//TODO Kolla om man redan är uppkopplad?
+		else if(source == serverConn) {
 			ServerConnDialog scd = new ServerConnDialog(new JFrame(), "Server Connection", this);
+			scd.setPreferredSize(new Dimension(250,275));
+			scd.setResizable(false);
 			scd.pack();
 			scd.setVisible(true);
         }
 		else if(source == userConn){
 			UserConnDialog ucd = new UserConnDialog(new JFrame(), "User Connection", this);
+			ucd.setPreferredSize(new Dimension(350,375));
+			ucd.setResizable(false);
 			ucd.pack();
 			ucd.setVisible(true);
 		}
 		else if(source == serverDisc){
-			serverDisconnected();
+			disconnectFromServer();
 		}
 		else if(source == userDisc){
-			disconnectFriend();
+			disconnectFromClient();
 		}
 	}
 	
@@ -274,109 +279,100 @@ public class Launcher extends JFrame implements ActionListener{
 		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy H:mm:ss");
 		String formattedDate = sdf.format(date);
 		
-		//TODO Add from whom
 		msg = "\n------------------------------\n" 
+				+ from + ": "
 				+ formattedDate + "\n" 
 				+ msg;
 		writeInPane(chatReadPane, msg);
 	}
 	
 	public void setServerInformation(String serverIP, String serverPort, String nickname){
-		this.serverIP = serverIP;
-		this.serverPort = serverPort;
 		this.nickname = nickname;
 	}
 	
-	public void diffRecieved(){
-		//TODO Something to put in the updatePane
-		String update = "";
-		writeInPane(updatePane, update);
+	public void connectToServer(){			
+		// Start the client
+		Controller.getInstance().initClient();
+		Controller.getInstance().getClient().send(Packets.CONNECTSERVER, nickname);
 	}
 	
-	public void diffSent(){
-		//TODO Something to put in the updatePane
-		String update = "";
-		writeInPane(updatePane, update);
-	}
-	
-	public void serverConnected(){		
-		//TODO server conn msg
+	public void serverGrantedConecction(){
 		serverConn.setEnabled(false);
 		serverDisc.setEnabled(true);
 		userConn.setEnabled(true);
 		userDisc.setEnabled(false);
 		chatButton.setEnabled(false);
 		
-		String msg = "";
-		writeInPane(updatePane, msg);
-		
-		// Start the client
-		Controller.getInstance().initClient();
-		Controller.getInstance().getClient().send(Packets.CONNECTSERVER, nickname);
+		updatePane("Connected to the server.");
 	}
 	
-	public void serverDisconnected(){
+	public void serverDeniedConnection(){
+		updatePane("Server denied access.");
+		
+		// Disconnect the client from the server
+		Controller.getInstance().killClient();
+	}
+	
+	public void disconnectFromServer(){
 		//TODO server disc msg
 		serverConn.setEnabled(true);
 		serverDisc.setEnabled(false);
 		userConn.setEnabled(false);
 		userDisc.setEnabled(false);
 		chatButton.setEnabled(false);
-		String msg = "";
-		writeInPane(updatePane, msg);
+
+		updatePane("Disconnected from the server.");
 		
 		// Disconnect the client from the server
 		Controller.getInstance().killClient();
 	}
 	
-	public void connectFriend(){		
-		//TODO user conn msg
+	public void connectToClient(String friend){
 		serverConn.setEnabled(false);
 		serverDisc.setEnabled(false);
 		userConn.setEnabled(false);
 		userDisc.setEnabled(true);
 		chatButton.setEnabled(true);
-		
-		String msg = "";
-		writeInPane(updatePane, msg);
-		
-		// Connect to user
-		Controller.getInstance().getClient().connectToUser(nickname, friend);
-		Controller.getInstance().initSynchronizeRoot();
-	}
-	
-	public void friendConnectedToUs(String friend){
-		//TODO user conn msg
-		serverConn.setEnabled(false);
-		serverDisc.setEnabled(false);
-		userConn.setEnabled(false);
-		userDisc.setEnabled(true);
-		chatButton.setEnabled(true);
-		
-		String msg = "";
-		writeInPane(updatePane, msg);
 		
 		// Connect to user
 		this.friend = friend;
+		updatePane("Connected to " + friend + ".");
+		
+		Controller.getInstance().initSynchronizeRoot();
 	}
 	
-	public void disconnectFriend(){
+	public void clientConnectedToUs(String friend){
+		serverConn.setEnabled(false);
+		serverDisc.setEnabled(false);
+		userConn.setEnabled(false);
+		userDisc.setEnabled(true);
+		chatButton.setEnabled(true);
+		
+		// Connect to user
+		this.friend = friend;
+		updatePane(friend + " connected to us.");
+		
+		// Connect to user
+		Controller.getInstance().initSynchronizeRoot();
+	}
+	
+	public void disconnectFromClient(){
 		//TODO user disc msg
 		serverConn.setEnabled(false);
 		serverDisc.setEnabled(true);
 		userConn.setEnabled(true);
 		userDisc.setEnabled(false);
 		chatButton.setEnabled(false);
-		
-		String msg = "";
-		writeInPane(updatePane, msg);
+
+		updatePane("Disconnected from " + friend + ".");
 		
 		// Disconnect us from the user
-		Controller.getInstance().getClient().send(Packets.DISCONNECTUSER);
+		Controller.getInstance().getClient().send(Packets.STOPCOLLABORATION);
+		Controller.getInstance().killSynchronizeRoot();
 		friend = null;
 	}
 	
-	public void friendIsDisconnecting(){
+	public void clientDisconnectedFromUs(){
 		//TODO user disc msg
 		serverConn.setEnabled(false);
 		serverDisc.setEnabled(true);
@@ -384,9 +380,9 @@ public class Launcher extends JFrame implements ActionListener{
 		userDisc.setEnabled(false);
 		chatButton.setEnabled(false);
 		
-		String msg = "";
-		writeInPane(updatePane, msg);
+		updatePane(friend + " disconnected from us.");
 		
+		Controller.getInstance().killSynchronizeRoot();
 		friend = null;
 	}
 	
@@ -398,10 +394,13 @@ public class Launcher extends JFrame implements ActionListener{
 		return nickList;
 	}
 
-	public void setFriendInfo(String friend, String filePath, List<Path> ignoreList) {
-		this.friend = friend;
+	public void setFriendInfo(String filePath, List<Path> ignoreList) {
 		this.filePath = filePath;
 		this.ignoreList = ignoreList;
+	}
+	
+	public void setFilePath(String filePath){
+		this.filePath = filePath;
 	}
 
 	public String getFilePath() {

@@ -28,6 +28,7 @@ import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import sigmatechnology.se.realtime_file_synchronisation.diff_match_patch.SynchronizeRoot;
+import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
 
 public class Util {
 	static private IEditorReference[] ii;
@@ -56,8 +57,7 @@ public class Util {
 			reader.close();
 			return new String(sb.toString());
 		} catch (IOException e) {
-			// TODO Print to console
-			System.out.println("Could not write to " + filePath.toString());
+			Controller.getInstance().getLauncher().updatePane("Could not read from " + filePath.toString());
 			e.printStackTrace();
 		}
 		
@@ -77,13 +77,17 @@ public class Util {
 			writer.write(s, 0, s.length());
 			writer.close();
 		} catch (IOException e) {
-			// TODO Print to console
-			System.out.println("Could not write to " + filePath.toString());
+			Controller.getInstance().getLauncher().updatePane("Could not write to " + filePath.toString());
 			e.printStackTrace();
 		}
 	}
 	
-	public static String getEclipseOpenFileContent(String path){
+	/**
+	 * 
+	 * @param path
+	 * @return
+	 */
+	public static String openEclipseGetContent(String path){
 		IEditorPart p;
 		if( (p = isOpenInEclipse(path)) != null){
 			IDocumentProvider provider = ((ITextEditor)p).getDocumentProvider();
@@ -149,7 +153,7 @@ public class Util {
 				if(iei instanceof IFileEditorInput){
 					IFile file = ((IFileEditorInput)iei).getFile();
 					IEditorPart p;
-					// If the editor got the same path and is an text editor, return its data
+					// If the editor got the same path and is a text editor, return its data
 			    	if(path.contains(file.getRawLocation().toOSString()) && 
 			    			(p = ier.getEditor(false)) instanceof ITextEditor){
 						return p;

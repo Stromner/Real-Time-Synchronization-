@@ -31,14 +31,14 @@ public class ServerConnDialog extends JDialog implements ActionListener{
 	private JPanel panel;
 	private JButton connectButton;
 	private GridBagConstraints gbc;
-	private Launcher client;
+	private Launcher launcher;
 	
 	private String path;
 	private String[] ipAndPort;
 	
-	public ServerConnDialog(JFrame frame, String title, Launcher client) {
+	public ServerConnDialog(JFrame frame, String title, Launcher launcher) {
 		super(frame, title);
-		this.client = client;
+		this.launcher = launcher;
 		
 		path = Platform.getInstallLocation().getURL().toString().substring(6) + "plugins/sigmatechnology.se.realtime_file_synchronisation/config.txt";
 		
@@ -52,7 +52,13 @@ public class ServerConnDialog extends JDialog implements ActionListener{
 		connectButton = new JButton();
 		//connectButton.setEnabled(false);
 		
-		ipAndPort = Util.openReadFile(Paths.get(path)).split(":");
+		File f = new File(path);
+		if(f.exists()){
+			ipAndPort = Util.openReadFile(Paths.get(path)).split(":");
+		}
+		else{
+			ipAndPort = null;
+		}
 		
 		//Nickname
 		label = new JLabel();
@@ -131,7 +137,7 @@ public class ServerConnDialog extends JDialog implements ActionListener{
 		
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setModal(true);
-		setLocationRelativeTo(null);
+		setLocationRelativeTo(launcher);
 	}
 	
 	@Override
@@ -143,15 +149,15 @@ public class ServerConnDialog extends JDialog implements ActionListener{
 				return;
 			}
 			else{
-				client.setServerInformation(serverIpTF.getText(), serverPortTF.getText(), nickTF.getText());
+				launcher.setServerInformation(serverIpTF.getText(), serverPortTF.getText(), nickTF.getText());
 				//TODO Controller.connectToServer(serverIpTF.getText(), serverPortTF.getText());
 				//If the IP or port has changed the new values will be written to the config.txt
-				if(serverIpTF == null || serverIpTF.getText().compareTo(ipAndPort[0]) != 0 || serverPortTF.getText().compareTo(ipAndPort[1]) != 0){
+				if(ipAndPort == null || serverIpTF.getText().compareTo(ipAndPort[0]) != 0 || serverPortTF.getText().compareTo(ipAndPort[1]) != 0){
 					prepareFile(serverIpTF.getText(), serverPortTF.getText());
 				}
 			}
 			
-			client.serverConnected();
+			launcher.connectToServer();
 		}
 		dispose();
 	}

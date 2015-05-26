@@ -23,6 +23,7 @@ public class ClientThread extends Thread{
 	private ClientThread threadFriend;
 	private List<Object> lastPackage;
 	private ReentrantLock lock;
+	private int status;
 	
 	/**
 	 * 
@@ -33,6 +34,7 @@ public class ClientThread extends Thread{
 		this.socket = socket;
 		this.server = server;
 		lock = new ReentrantLock();
+		status = 0;
 		
 		try {
 			out = new ObjectOutputStream(socket.getOutputStream());
@@ -55,16 +57,21 @@ public class ClientThread extends Thread{
 			e.printStackTrace();
 		}
 		
+		// Inform all the other users about us disconnecting
+		removeUser();
+		
 		// Remove us from the set and map(If we're in them)
 		for (Map.Entry<String, ClientThread> entry : server.userMap.entrySet()){
 			if(entry.getKey() == userName){
 				server.userMap.remove(userName);
+				break;
 			}
 		}
 		
 		for (ClientThread t : server.threadSet) {
 			if(t.getId() == getId()){
 				server.threadSet.remove(t);
+				break;
 			}
 		}
 	}
@@ -117,6 +124,10 @@ public class ClientThread extends Thread{
 		receive();
 	}
 	
+	public void setUserStatus(int status){
+		this.status = status;
+	}
+	
 	/**
 	 * 
 	 */
@@ -132,28 +143,39 @@ public class ClientThread extends Thread{
 					
 					switch((Packets)argsList.get(0)){
 						case CONNECTSERVER:
+							System.out.println("ClientThread[" + userName +"]: Connect");
 							newUser(argsList);
 							break;
 						case DISCONNECTSERVER:
-							removeUser(argsList);
+							System.out.println("ClientThread[" + userName +"]: Disconnect");
+							disconnect();
 							break;
-						case CONNECTUSER:
+						case STARTCOLLABORATION:
+							System.out.println("ClientThread[" + userName +"]: Connect to user");
 							connectUsers(argsList);
 							break;
-						case DISCONNECTUSER:
+						case ACKUSERCONNECT:
+							ClientThread ct1 = server.userMap.get(argsList.get(1));
+							ct1.setUserStatus(1);
+							break;
+						case DENYUSERCONNECT:
+							ClientThread ct2 = server.userMap.get(argsList.get(1));
+							ct2.setUserStatus(2);
+							break;
+						case STOPCOLLABORATION:
+							System.out.println("ClientThread[" + userName +"]: Disconnect from user");
 							disconnectUsers(argsList);
 							break;
 						case SYNCFILE:
-							System.out.println("ClientThread: SyncFile");
+							System.out.println("ClientThread[" + userName +"]: SyncFile");
 							synchronizeFileWithUser(argsList);
 							break;
 						case CHAT:
-							System.out.println("ClienThread: Chat");
+							System.out.println("ClientThread[" + userName +"]: Chat");
 							chatMessageToUser(argsList);
 							break;
 						case ERROR:
-							System.out.println("ClientThread: Error");
-							// TODO Expand? Might be errors that needed to be handled in different ways.
+							System.out.println("ClientThread[" + userName +"]: Error");
 							break;
 						default:
 							break;
@@ -161,17 +183,17 @@ public class ClientThread extends Thread{
 					}
 				}
 			} catch (ClassNotFoundException | IOException e) {
-				System.out.println("ClientThread[" + userName +"]: receive failed");
+				e.printStackTrace();
 				disconnect();
+				System.out.println("ClientThread[" + userName +"]: receive failed");
 			}
 		}
 	}
 	
 	private void newUser(List<Object> argsList){
-		System.out.println("ClientThread: Connect");
-		userName = (String)argsList.get(1);
-		if(server.userMap.get(userName) == null){
-			send(Packets.OK);
+		if(server.userMap.get((String)argsList.get(1)) == null){
+			userName = (String)argsList.get(1);
+			send(Packets.GRANTACCESS);
 			
 			server.userMap.put(userName, this);
 			
@@ -180,19 +202,20 @@ public class ClientThread extends Thread{
 			while (it.hasNext()) {
 				Map.Entry<?,?> pair = (Map.Entry<?,?>)it.next();
 				ClientThread ct = (ClientThread)pair.getValue();
+				// Inform us about all the other users too!
 				if(ct.userName != userName){
-					ct.send(Packets.CONNECTSERVER, userName);
+					ct.send(Packets.NEWUSER, userName);
+					send(Packets.NEWUSER, ct.userName);
 				}
 			}
 		}
 		else{
 			System.out.println("ClientThread[" + userName +"]: user already on the server.");
-			send(Packets.ERROR, "User " + userName + " already exists on the server.");
+			send(Packets.DENYACCESS, "User " + userName + " already exists on the server.");
 		}
 	}
 	
-	private void removeUser(List<Object> argsList){
-		System.out.println("ClientThread: Disconnect");
+	private void removeUser(){
 		if(userName != null && server.userMap.get(userName) != null){
 			// Inform all other users that are not us
 			Iterator<?> it = server.userMap.entrySet().iterator();
@@ -200,50 +223,60 @@ public class ClientThread extends Thread{
 				Map.Entry<?,?> pair = (Map.Entry<?,?>)it.next();
 				ClientThread ct = (ClientThread)pair.getValue();
 				if(ct.userName != userName){
-					ct.send(Packets.DISCONNECTSERVER, userName);
+					ct.send(Packets.DISCONNECTUSER, userName);
 				}
 			}
 
 			System.out.println("ClientThread[" + userName +"]: User " + userName + " disconnected.");
-			disconnect();
 			return;
 		}
 		else{
 			System.out.println("ClientThread[" + userName +"]: Could not delete user");
-			send(Packets.ERROR, "User " + userName + " can not be found on the server.s");
 		}
 	}
 	
-	private void connectUsers(List<Object> argsList){
-		System.out.println("ClientThread: Connect to user");
+	private void connectUsers(List<Object> argsList) throws ClassNotFoundException, IOException{
+		ClientThread ct = server.userMap.get(argsList.get(1));
+		
 		if(server.userMap.get(userName) == null){
 			send(Packets.ERROR, "You are not connected to the server");
 			return;
 		}
-		if(threadFriend != null){
+		else if(threadFriend != null){
 			send(Packets.ERROR, "You are already connected to " + threadFriend.userName);
 			return;
 		}		
-		threadFriend = server.userMap.get(argsList.get(1));
-		if(threadFriend == null){
-			send(Packets.ERROR, "User " + argsList.get(1) + " can not be found. Can not connect you too it");
+		else if(ct == null){
+			send(Packets.ERROR, "User " + argsList.get(1) + " can not be found on the server.");
 			return;
 		}
 		
 		// Inform the other users that we connected to it.
-		threadFriend.setFriend(this);
-		threadFriend.send(Packets.CONNECTUSER, userName);
+		ct.send(Packets.STARTCOLLABORATION, userName, argsList.get(2));
+		// Wait for its answer
+		while(status == 0){
+			try {
+				sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		if(status == 1){
+			setFriend(ct);
+			ct.setFriend(this);
+			
+			// Inform the user that it went ok
+		    send(Packets.ACKUSERCONNECT, argsList.get(1));
+		}
+		else{
+			send(Packets.DENYUSERCONNECT, "User " + argsList.get(1) + " denied your connection.");
+		}
+		status = 0;
 		
-		// Inform the user that it went ok
-	    send(Packets.OK);
-	    if(isInterrupted()){
-	    	return;
-	    }
 		// TODO Add checks with belonging data for checking that all documents are equal.
 	}
 	
 	private void disconnectUsers(List<Object> argsList){
-		System.out.println("ClientThread: Disconnect from user");
 		if(server.userMap.get(userName) == null){
 			send(Packets.ERROR, "You are not connected to the server");
 			return;
@@ -253,7 +286,7 @@ public class ClientThread extends Thread{
 			return;
 		}
 		
-		threadFriend.send(Packets.DISCONNECTUSER, userName);
+		threadFriend.send(Packets.STOPCOLLABORATION, userName);
 		threadFriend.setFriend(null);
 		threadFriend = null; // Goodbye my friend :´(
 		// Inform the user that it went ok
@@ -281,11 +314,11 @@ public class ClientThread extends Thread{
 			return;
 		}
 		if(threadFriend == null){
-			send(Packets.ERROR, "Not connected to another user. Can not send diffs");
+			send(Packets.ERROR, "Not connected to another user. Can not send chat");
 			return;
 		}
 		
-		threadFriend.send(Packets.CHAT, argsList.get(1), userName);
+		threadFriend.send(Packets.CHAT, userName, argsList.get(1));
 		// Inform the user that it went ok
 		send(Packets.OK);
 	}

@@ -14,6 +14,7 @@ package sigmatechnology.se.realtime_file_synchronisation.diff_match_patch;
  * @date 2015-05-08
  */
 
+import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,16 +63,20 @@ public class SynchronizeRoot extends Thread{
 		update();
 	}
 	
+	public Path getRepo(){
+		return root;
+	}
+	
 	@Override
-	public void run(){
+	public void run(){	
 		while(!isInterrupted()){
 			try {
 				Thread.sleep(500);
 			} catch (InterruptedException e) {
 				break;
 			}
-			Controller.getInstance().getClient().send(Packets.SYNCFILE, getDiffs());
 			update(); // Any changes to the files we track?
+			Controller.getInstance().getClient().send(Packets.SYNCFILE, getDiffs());
 		}
 	}
 	
@@ -101,6 +106,7 @@ public class SynchronizeRoot extends Thread{
 			    		if(notIgnored){
 							rootMap.put(p.toString(), new SynchronizeDocument(p.toString(), Util.openReadFile(filePath)));
 							Controller.getInstance().getLauncher().updatePane("Tracking file: " + p.toString());
+							Controller.getInstance().getClient().send(Packets.CREATEFILE, p.toString(), Util.openReadFile(filePath));
 			    		}
 			    	}
 			    }
@@ -117,6 +123,14 @@ public class SynchronizeRoot extends Thread{
 	        SynchronizeDocument sd = (SynchronizeDocument)pair.getValue();
 	        if(!root.resolve(sd.getPath()).toFile().exists()){
 	        	it.remove();
+	        	Controller.getInstance().getLauncher().updatePane("Removed file: " + sd.getPath());
+	        	Controller.getInstance().getClient().send(Packets.DELETEFILE, sd.getPath());
+	        	String parent = root.resolve(sd.getPath()).getParent().toString();
+	        	// If the folder itself was removed, inform our partner about it.
+	        	if(!root.resolve(parent).toFile().exists()){
+	        		Controller.getInstance().getLauncher().updatePane("Removed folder: " + parent);
+	        		Controller.getInstance().getClient().send(Packets.DELETEFILE, parent);
+	        	}
 	        }
 	    }
 	}
@@ -146,10 +160,10 @@ public class SynchronizeRoot extends Thread{
 	}
 	
 	/**
-	 * Applies each diff in the list to the corresponding document. 
-	 * 
-	 * @param diffs list of diffs to be applied to the document.
-	 */
+	* Applies each diff in the list to the corresponding document.
+	*
+	* @param diffs list of diffs to be applied to the document.
+	*/
 	public void applyDiffs(LinkedList<SynchronizeDocument> diffs){
 		lock.lock();
 		SynchronizeDocument sd;
@@ -158,7 +172,7 @@ public class SynchronizeRoot extends Thread{
 			applyDiff(sd.getDiffs(), Paths.get(sd.getPath()));
 		}
 		lock.unlock();
-	}	
+	} 
 	
 	/**
 	 * Calculates a diff between the old version of a document and the current version of 
@@ -211,14 +225,12 @@ public class SynchronizeRoot extends Thread{
 		if(eclipseString != null){
 			o = dmp.patch_apply(patchList, eclipseString);
 			s = (String)o[0];
-			Util.openEclipseWriteContent(root.resolve(doc).toString(), s);
+			Util.openEclipseWriteContent(root.resolve(doc).toString(), s, diffList);
 		}
 		else{
-			System.out.println("doc: " + doc);
 			o = dmp.patch_apply(patchList, Util.openReadFile(root.resolve(doc)));
 			s = (String)o[0];
 			Util.openWriteFile(root.resolve(doc), s);
-			System.out.println("s: " + s);
 		}
 		
 		// Update the internal file

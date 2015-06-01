@@ -85,10 +85,6 @@ public class Controller extends Thread{
 	 * Initiate the client class for connecting to the server. If an error occurs during the initiations the client will close itself.
 	 */
 	public void initClient(){
-		// Error handle
-		// Close client
-			// Bad connection
-			// Bad user name
 		client = new Client();
 	}
 	
@@ -108,8 +104,11 @@ public class Controller extends Thread{
 		
 		client.disconnect();
 		client = null;
-		while(userList.size() > 1){
+		
+		// Remove all users
+		while(userList.size() >= 1){
 			userList.remove(0);
+			System.out.println("removing");
 		}
 	}
 	

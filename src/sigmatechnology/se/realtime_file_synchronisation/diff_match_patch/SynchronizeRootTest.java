@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.eclipse.ui.PartInitException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -51,9 +52,16 @@ public class SynchronizeRootTest{
 	public void setUp(){
 		syncRepo1 = new SynchronizeRoot(repo1, null);
 		syncRepo2 = new SynchronizeRoot(repo2, null);
-		
+	}
+	
+	@After
+	public void tearDown(){
 		emptyFile(sSend1);
 		emptyFile(sSend2);
+		emptyFile(sRecieve1);
+		emptyFile(sRecieve2);
+		emptyFile(sIgnoreFile1);
+		emptyFile(sIgnoreFile2);
 	}
 	
 	//

@@ -13,6 +13,8 @@ public enum Packets {
 	STOPCOLLABORATION,	// Client to server to client: Users stopped the collaboration
 	SYNCFILE,			// Client to server to client: Diff object list message
 	CHAT,				// Client to server to client: Chat message
+	CREATEFILE,			// Client to server to client: Create this file/folder
+	DELETEFILE,			// Client to server to client: Delete this file/folder
 	ERROR,				// Server to client: Error message
 	OK;					// Server to client: Confirm message
 }

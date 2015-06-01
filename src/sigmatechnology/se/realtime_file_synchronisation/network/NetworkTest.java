@@ -13,7 +13,7 @@ import org.junit.Test;
 import sigmatechnology.se.realtime_file_synchronisation.plugin.Controller;
 
 public class NetworkTest{
-	public static final int WAITTIME = 200;
+	public static final int WAITTIME = 50;
 	private String user1 = "Abba", user2 = "Dabba", user3 = "Cabba";
 	private static Server server;
 	private Client client1, client2;
@@ -71,7 +71,7 @@ public class NetworkTest{
 		// Disconnect
 		client1.send(Packets.DISCONNECTSERVER);
 		Thread.sleep(WAITTIME);
-		assertNull(client1.getLastPackage());
+		assertTrue(client1.getLastPackage().get(0) == Packets.ERROR);
 	}
 	
 	@Test
@@ -99,7 +99,7 @@ public class NetworkTest{
 	@Test
 	public void testMultipleConnections() throws InterruptedException{
 		System.out.println("\t --- testMultipleConnections ---");
-		// Connect to server
+		// Connect
 		client1.send(Packets.CONNECTSERVER, user1);
 		Thread.sleep(WAITTIME);
 		assertTrue(client1.getLastPackage().get(0) == Packets.GRANTACCESS);

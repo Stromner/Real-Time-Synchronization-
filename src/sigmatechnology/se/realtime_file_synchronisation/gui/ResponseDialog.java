@@ -90,7 +90,7 @@ public class ResponseDialog extends JDialog implements ActionListener{
 		panel1.add(label, gbc);
 		
 		fileDirTF1 = new JTextField();
-		//fileDirTF1.setText(fileDir);
+		fileDirTF1.setText(fileDir);
 		fileDirTF1.setEditable(false);
 		nicknameTF.setColumns(columns);
 		gbc.anchor = GridBagConstraints.CENTER;

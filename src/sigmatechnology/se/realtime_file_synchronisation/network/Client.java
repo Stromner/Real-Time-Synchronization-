@@ -9,11 +9,13 @@ package sigmatechnology.se.realtime_file_synchronisation.network;
  * @version 2015-05-04
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -168,9 +170,9 @@ public class Client {
 						// Wait for response from the dialog
 						while(status == 0){}
 						if(status == 1){
+							send(Packets.ACKUSERCONNECT, argsList.get(1));
 							Controller.getInstance().userConnected((String)argsList.get(1), true);
 							friend = (String) argsList.get(1);
-							send(Packets.ACKUSERCONNECT, argsList.get(1));
 						}
 						else{
 							send(Packets.DENYUSERCONNECT, argsList.get(1));
@@ -192,11 +194,42 @@ public class Client {
 						break;
 					case SYNCFILE:
 						System.out.println("Client: SYNCFILE");
+						while(Controller.getInstance().getSynchronizeRoot() == null){
+							System.out.println("BUGG: Root is null");
+							while(true){
+								continue;
+							}
+						}
 						Controller.getInstance().getSynchronizeRoot().applyDiffs((LinkedList<SynchronizeDocument>) argsList.get(1));
 						break;
 					case CHAT:
 						System.out.println("Client: CHAT");
 						Controller.getInstance().msgToGUI((String)argsList.get(1), (String)argsList.get(2));
+						break;
+					case CREATEFILE:
+						System.out.println("Client: CREATEFILE");
+						while(Controller.getInstance().getSynchronizeRoot() == null){
+							System.out.println("BUGG: Root is null");
+							while(true){
+								continue;
+							}
+						}
+						
+						Util.createFile(Controller.getInstance().getSynchronizeRoot().getRepo().resolve((String) argsList.get(1)));
+						Util.openWriteFile(Controller.getInstance().getSynchronizeRoot().getRepo().resolve((String) argsList.get(1)), (String) argsList.get(2));
+						break;
+					case DELETEFILE:
+						System.out.println("Client: DELETEFILE");
+						while(Controller.getInstance().getSynchronizeRoot() == null){
+							System.out.println("BUGG: Root is null");
+							while(true){
+								continue;
+							}
+						}
+						
+						Controller.getInstance().getSynchronizeRoot().getRepo().resolve((String) argsList.get(1));
+						File f = new File(Controller.getInstance().getSynchronizeRoot().getRepo().resolve((String) argsList.get(1)).toString());
+						Util.deleteDir(f);
 						break;
 					case ERROR:
 						System.out.println("Client: ERROR: " + argsList.get(1));
